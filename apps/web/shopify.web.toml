@@ -1,0 +1,6 @@
+# The one web process `shopify app dev` runs. The CLI sets cwd to apps/web and
+# injects PORT, SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SCOPES, HOST (ADR 0008).
+roles = ["frontend", "backend"]
+
+[commands]
+dev = "pnpm dev"
