@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { shopify } from '~/shopify.server';
 
 /**
- * `POST /webhooks/compliance/*` (ADR 0004 §starter routes).
+ * `POST /webhooks/compliance/*` (ADR 0004 starter routes).
  *
  * The three mandatory GDPR topics, wired as a topic-keyed MAP (splat route).
  * `shopify.app.toml` points all three privacy-compliance URLs under

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 /**
- * `/app/additional` (ADR 0007 §route tree). Static Polaris web-component content.
+ * `/app/additional` (ADR 0007 route tree). Static Polaris web-component content.
  * Exists to demo `<s-app-nav>` active-state highlighting + client-side
  * `shopify:navigate` routing through TanStack Router (no iframe reload). No Admin
  * API calls.

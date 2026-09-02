@@ -26,7 +26,7 @@ export interface Unauthenticated {
 }
 
 /**
- * `unauthenticated.admin(shop)` / `.storefront(shop)` (ADR 0003 §2). Offline
+ * `unauthenticated.admin(shop)` / `.storefront(shop)` (ADR 0003 2). Offline
  * access with no session token — callers are webhook handlers, cron, app proxy.
  *
  * `ensureValidOfflineSession(shop)`: `loadSession(getOfflineId(shop))`, refresh

@@ -4,7 +4,7 @@ import { shopify } from '~/shopify.server';
 import { sessionStorage } from '~/db/client';
 
 /**
- * `POST /webhooks/app.scopes_update` (ADR 0004 §starter routes).
+ * `POST /webhooks/app.scopes_update` (ADR 0004 starter routes).
  *
  * Fired when the merchant's granted access scopes change. Persist the new scope
  * string onto the stored offline `Session` so subsequent `adminMiddleware` calls

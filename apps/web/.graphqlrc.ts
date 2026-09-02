@@ -4,7 +4,7 @@ import type { IGraphQLConfig } from 'graphql-config';
 import { API_VERSION } from './app/shopify.config';
 
 /**
- * GraphQL codegen config (ADR 0007 §GraphQL codegen).
+ * GraphQL codegen config (ADR 0007 GraphQL codegen).
  *
  * - Admin API only — nothing in the starter uses Storefront / Customer GraphQL.
  * - `apiVersion` comes from the ONE shared dated constant (`app/shopify.config.ts`),

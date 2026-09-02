@@ -30,7 +30,7 @@ const EMPTY: ShopifyRequestContext = {
 };
 
 /**
- * The eager global `requestMiddleware` (ADR 0002 §Auth boundary), registered by
+ * The eager global `requestMiddleware` (ADR 0002 Auth boundary), registered by
  * the consumer in `src/start.ts` via `createStart`. Runs for every SSR and
  * server-route request whose path is not on `config.excludePaths` (IP-7).
  *

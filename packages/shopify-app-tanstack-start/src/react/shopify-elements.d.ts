@@ -2,7 +2,7 @@ import type { DetailedHTMLProps, HTMLAttributes } from 'react';
 
 /**
  * IP-10 — the `React.JSX.IntrinsicElements` shim for the Polaris CDN web
- * components (`<s-*>`) and App Bridge's `<s-app-nav>` (ADR 0006 §package `/react`).
+ * components (`<s-*>`) and App Bridge's `<s-app-nav>` (ADR 0006 package `/react`).
  *
  * `@shopify/app-bridge-types` declares its custom elements on the **legacy global
  * `JSX` namespace** (`declare global { namespace JSX { … } }`), which React 19's

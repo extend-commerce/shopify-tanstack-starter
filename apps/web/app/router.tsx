@@ -5,7 +5,7 @@ import { routeTree } from './routeTree.gen';
 
 /**
  * Factory — TanStack Start calls this once per request (fresh instance, no
- * cross-request state). Seeds the client-safe router context (ADR 0003 §3): only
+ * cross-request state). Seeds the client-safe router context (ADR 0003 3): only
  * `{ shop, isAuthenticated, queryClient }` ever reaches the browser — never a
  * `session` or access token. `shop` / `isAuthenticated` are overwritten by
  * `__root`'s `beforeLoad` from the SSR request-middleware result.

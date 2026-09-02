@@ -6,7 +6,7 @@ export const RETRY_INVALID_SESSION_HEADER = 'X-Shopify-Retry-Invalid-Session-Req
 export const REAUTHORIZE_URL_HEADER = 'X-Shopify-API-Request-Failure-Reauthorize-Url';
 
 /**
- * Per-shop CSP `frame-ancestors` for document responses (ADR 0006 §CSP).
+ * Per-shop CSP `frame-ancestors` for document responses (ADR 0006 CSP).
  * Emitted from the global `requestMiddleware`, which is the only place with the
  * decoded `shop` on every document request. No `<link rel=preload>` for the CDN
  * scripts — they are already non-async in `__root`'s `<head>`.
@@ -42,7 +42,7 @@ export function isDocumentRequest(request: Request): boolean {
 }
 
 /**
- * RR-exact failure contract (ADR 0002 §Failure contract):
+ * RR-exact failure contract (ADR 0002 Failure contract):
  *   - XHR  → `401` (+ `X-Shopify-Retry-Invalid-Session-Request: 1` when `retry`)
  *   - document → `302` to the bounce route
  */
@@ -67,7 +67,7 @@ export function respondToInvalidSessionToken(args: {
 }
 
 /**
- * Scope re-authorization (ADR 0002 §Failure contract):
+ * Scope re-authorization (ADR 0002 Failure contract):
  *   - XHR → `401` + `X-Shopify-API-Request-Failure-Reauthorize-Url`
  *   - document → `302` to the managed-install URL
  */

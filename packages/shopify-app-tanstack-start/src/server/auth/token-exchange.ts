@@ -17,7 +17,7 @@ export function getSessionTokenFromRequest(request: Request, url: URL): string |
 /* ------------------------------------------------------------------------- *
  * Per-process idempotency + in-flight de-dupe.
  *
- * These are intentionally IN-MEMORY and NOT behind a seam (ADR 0009 §Known
+ * These are intentionally IN-MEMORY and NOT behind a seam (ADR 0009 Known
  * single-instance limitation). On multi-instance hosting two instances can each
  * run `hooks.afterAuth` once for the same shop inside the 60s TTL window. For the
  * starter's no-op handler this is harmless; the deferred deployment effort swaps
@@ -39,7 +39,7 @@ async function runAfterAuthOnce(key: string, fn: () => Promise<void> | void): Pr
 }
 
 /**
- * The eager token-exchange / refresh pipeline (ADR 0002 §Auth boundary).
+ * The eager token-exchange / refresh pipeline (ADR 0002 Auth boundary).
  *
  * Given a validated session token + its shop: load the offline session and — if
  * it is missing, tokenless, or within `WITHIN_MILLISECONDS_OF_EXPIRY` of expiry —

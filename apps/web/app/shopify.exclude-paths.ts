@@ -1,5 +1,5 @@
 /**
- * IP-7 — the global-middleware path-exclusion list (ADR 0007 §exclusion list).
+ * IP-7 — the global-middleware path-exclusion list (ADR 0007 exclusion list).
  *
  * Owned by WS7 (app routes) because the package cannot know which of the app's
  * routes are public. The eager `requestMiddleware` (ADR 0002) SKIPS the eager

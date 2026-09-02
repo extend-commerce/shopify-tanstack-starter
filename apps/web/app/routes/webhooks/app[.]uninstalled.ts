@@ -4,7 +4,7 @@ import { shopify } from '~/shopify.server';
 import { sessionStorage } from '~/db/client';
 
 /**
- * `POST /webhooks/app.uninstalled` (ADR 0004 §starter routes).
+ * `POST /webhooks/app.uninstalled` (ADR 0004 starter routes).
  *
  * Server route, never a `createServerFn` (cross-cutting rule #6): Shopify posts
  * an HMAC-signed body cross-origin. `shopify.handlers.webhooks` HMAC-validates

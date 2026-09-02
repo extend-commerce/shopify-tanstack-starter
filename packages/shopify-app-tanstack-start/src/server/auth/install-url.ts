@@ -1,7 +1,7 @@
 import type { DerivedConfig } from '../config';
 
 /**
- * Managed-installation URL builders (ADR 0002 §3.3, RR parity).
+ * Managed-installation URL builders (ADR 0002 3.3, RR parity).
  * Managed install = `/admin/oauth/install?client_id=...`; after the merchant
  * installs, Admin loads the app embedded and token exchange mints the token.
  */

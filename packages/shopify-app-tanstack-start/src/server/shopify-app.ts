@@ -16,7 +16,7 @@ import { bindWebhookHandlers, type WebhookFactory } from '../webhooks/index';
 import { bindRegisterWebhooks } from '../webhooks/register';
 
 /**
- * IP-3 — the `createShopifyApp(config)` return object (ADR 0001 §return value).
+ * IP-3 — the `createShopifyApp(config)` return object (ADR 0001 return value).
  *
  * Middleware + handler factories, NOT a port of RR's `authenticate.*` shape:
  *   - `requestMiddleware` — eager global; registered in the app's `src/start.ts`

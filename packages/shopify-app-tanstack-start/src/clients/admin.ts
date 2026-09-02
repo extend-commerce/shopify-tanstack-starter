@@ -2,7 +2,7 @@ import { createAdminApiClient, type AdminApiClient } from '@shopify/admin-api-cl
 import type { Session } from '@shopify/shopify-api';
 
 /**
- * The Admin GraphQL capability (ADR 0003 §1 / IP-4 / IP-5).
+ * The Admin GraphQL capability (ADR 0003 1 / IP-4 / IP-5).
  *
  * `admin.graphql(query, { variables, headers?, signal? })` resolves the **parsed**
  * `{ data, errors, extensions }` (`ClientResponse`) from `@shopify/admin-api-client`'s

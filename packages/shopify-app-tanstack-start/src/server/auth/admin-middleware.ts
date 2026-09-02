@@ -9,7 +9,7 @@ import { buildScopesReauthorizeUrl } from './install-url';
 
 /**
  * `scopes` capability (RR shape `{ query, request, revoke }`). Only `request` is
- * implemented — it throws the scope re-authorization response (ADR 0002 §Failure
+ * implemented — it throws the scope re-authorization response (ADR 0002 Failure
  * contract). `query` / `revoke` are reserved.
  */
 export interface ScopesApiContext {
@@ -97,7 +97,7 @@ function isAdminUnauthorized(error: unknown): boolean {
 
 /**
  * IP-4 — function middleware for Admin-touching `createServerFn`s (ADR 0002
- * §layer 2). Independently re-validates the request's `Bearer` (App Bridge's
+ * layer 2). Independently re-validates the request's `Bearer` (App Bridge's
  * fetch interceptor puts it on server-fn RPC too — prototype finding 6), reloads
  * / ensures an active offline session, builds the `admin` client, and on an
  * Admin API `401` invalidates the stored token and returns the retry response

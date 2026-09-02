@@ -3,7 +3,7 @@ import type { SessionStorage } from '@shopify/shopify-app-session-storage';
 import type { AdminApiContext } from '../clients/admin';
 
 /**
- * Distribution model (ADR 0001 §Consequences). `AppStore` (default) +
+ * Distribution model (ADR 0001 Consequences). `AppStore` (default) +
  * `SingleMerchant` are supported; `ShopifyAdmin` (merchant-custom-app strategy)
  * is out of scope and throws.
  */
@@ -20,7 +20,7 @@ export interface AfterAuthContext {
 }
 
 /**
- * `createShopifyApp` config (ADR 0001 §Config object).
+ * `createShopifyApp` config (ADR 0001 Config object).
  *
  * Keeps React Router's `AppConfigArg` field *names* (low switching cost from the
  * RR template) but drops the legacy-OAuth `begin`/`callback` surface,

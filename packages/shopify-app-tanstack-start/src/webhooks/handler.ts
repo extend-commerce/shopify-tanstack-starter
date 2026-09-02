@@ -2,7 +2,7 @@
  * WS4 — Webhook handler factory (ADR 0004 "Webhook handling").
  *
  * Webhooks arrive as TanStack Start *server routes* under `webhookPath` (default
- * `/webhooks`) — never `createServerFn` (BUILD-PLAN §6 rule 6: outside callers
+ * `/webhooks`) — never `createServerFn` (BUILD-PLAN 6 rule 6: outside callers
  * post HMAC bodies, server fns are same-origin RPC with auto-CSRF). This module
  * builds the polymorphic `shopify.handlers.webhooks(...)` factory a route file
  * wires into whatever the current TanStack Start server-route API is.

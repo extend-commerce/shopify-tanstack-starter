@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
- * The client-safe router context (ADR 0003 §3 / IP-6-ctx).
+ * The client-safe router context (ADR 0003 3 / IP-6-ctx).
  *
  * This is the ONLY Shopify-derived context that reaches the browser. It is
  * populated during SSR from the global `requestMiddleware` result and dehydrated

@@ -1,7 +1,7 @@
 import type { ApiVersion, Session, Shopify } from '@shopify/shopify-api';
 
 /**
- * The offline Storefront GraphQL capability (ADR 0003 §2, §capability parity).
+ * The offline Storefront GraphQL capability (ADR 0003 2, capability parity).
  *
  * Reached ONLY via `unauthenticated.storefront(shop)` — there is no authenticated
  * `storefront` in this package (RR parity). Like `admin.graphql`, it resolves the

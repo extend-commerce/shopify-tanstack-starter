@@ -77,7 +77,7 @@ several **not** collide, not forcing parallelism.
 ## 4. Workstreams
 
 Each workstream lists the files it **owns** (no other workstream writes them),
-what it **consumes**, the **integration points** it must honour (§5), ordered
+what it **consumes**, the **integration points** it must honour (5), ordered
 **steps** each linking its ADR, and a **done-when**.
 
 ### WS0 — Repo & tooling  ·  ADR 0008, ADR 0009  ·  wave 1, blocks everything
@@ -96,18 +96,18 @@ here because WS5 and WS7 both need it in earlier waves).
    `@shopify/shopify-api`, `@shopify/shopify-app-session-storage`,
    `@shopify/shopify-app-session-storage-drizzle`, `typescript`, `vite`,
    `drizzle-orm`. `.npmrc`: `save-exact=true`, `dedupe-peer-dependents=true`,
-   `auto-install-peers=true`. (ADR 0008 §Workspace layout)
+   `auto-install-peers=true`. (ADR 0008 Workspace layout)
 2. `.nvmrc` = `22`; root `package.json` `packageManager: "pnpm@10.x+sha512…"`,
-   `engines: { node: ">=22", pnpm: ">=10" }`, Corepack. (ADR 0008 §Node + pnpm)
+   `engines: { node: ">=22", pnpm: ">=10" }`, Corepack. (ADR 0008 Node + pnpm)
 3. `tsconfig.base.json`: `strict`, `moduleResolution: "Bundler"`, `module: "ESNext"`,
    `target: "ES2024"`, `jsx: "react-jsx"`, `noEmit`, `isolatedModules`,
    `verbatimModuleSyntax`, `skipLibCheck`, `forceConsistentCasingInFileNames`.
-   (ADR 0008 §Package consumption)
+   (ADR 0008 Package consumption)
 4. `.oxlintrc.json`: `categories: { correctness: "error", suspicious: "warn" }`,
    plugins `["react","typescript","import","jsx-a11y"]`. **Two `no-restricted-imports`
    rules**: (a) block `@shopify/polaris` + `@shopify/polaris-icons` everywhere
    (ADR 0006); (b) block `node:*` and bare `crypto`/`fs`/`path`/`net`/`tls`/`stream`
-   **scoped to `packages/*/src/**`** (ADR 0009). (ADR 0008 §Lint & format)
+   **scoped to `packages/*/src/**`** (ADR 0009). (ADR 0008 Lint & format)
 5. `.prettierrc` = `{ singleQuote, semi, trailingComma: "all", printWidth: 100 }`;
    `.prettierignore`: `**/routeTree.gen.ts`, `apps/web/app/types/*.generated.d.ts`,
    `**/.output`, `**/.nitro`, `**/dist`, `apps/web/app/db/migrations/**`.
@@ -116,8 +116,8 @@ here because WS5 and WS7 both need it in earlier waves).
    (→ `app/types/admin.*.d.ts`), `dev` (persistent, uncached), `build`
    (`dependsOn: ["^build", "routes:generate", "graphql-codegen"]`), `typecheck`
    (`dependsOn: ["routes:generate", "graphql-codegen"]`), `lint`, `format:check`,
-   `db:generate`, `db:migrate`, `db:seed`. (ADR 0008 §Turbo pipeline)
-7. `shopify.app.toml` at repo root (ADR 0008 §`shopify.app.toml`): `embedded = true`;
+   `db:generate`, `db:migrate`, `db:seed`. (ADR 0008 Turbo pipeline)
+7. `shopify.app.toml` at repo root (ADR 0008 `shopify.app.toml`): `embedded = true`;
    `[access_scopes] scopes = "write_products"`; `[auth] redirect_urls =
    ["<appUrl>/auth"]`; `[webhooks] api_version = "<dated>"` with a
    `# keep in sync with apps/web/app/shopify.config.ts` comment;
@@ -127,7 +127,7 @@ here because WS5 and WS7 both need it in earlier waves).
    `automatically_update_urls_on_dev = true`, `include_config_on_deploy = true`.
    **Omit** `[access.admin] embedded_app_direct_api_access`.
 8. `apps/web/app/shopify.config.ts`: `export const API_VERSION = '<dated>' as const;`
-   — a specific dated version, **not** `LATEST_API_VERSION` (ADR 0008 §single apiVersion).
+   — a specific dated version, **not** `LATEST_API_VERSION` (ADR 0008 single apiVersion).
 9. `.gitignore`: `node_modules`, `**/.output`, `**/.nitro`, `**/dist`, `.turbo`,
    `.env*` (keep `!.env.example`), `**/routeTree.gen.ts`, `.DS_Store`. `README.md`
    clone-and-go: `pnpm i` → `pnpm db:up` → `shopify app dev`. `README` also gets a
@@ -151,26 +151,26 @@ lint` runs (no targets yet is fine).
 **Steps**
 
 1. `docker-compose.yml` at repo root: one `postgres:17-alpine`, named volume,
-   `pg_isready` healthcheck. (ADR 0005 §Local Postgres)
+   `pg_isready` healthcheck. (ADR 0005 Local Postgres)
 2. Deps (via `catalog:`): `pg`, `drizzle-orm` (`drizzle-orm/node-postgres`),
    `drizzle-kit`, `@shopify/shopify-app-session-storage-drizzle`. **`drizzle-orm`
    pinned `^0.45.0`** — the `1.0.0-rc` line `ERESOLVE`s against the adapter peer.
-   (ADR 0005 §Driver)
+   (ADR 0005 Driver)
 3. `schema.ts`: a **verbatim copy** of the adapter's canonical `postgres.schema.ts`
    — all 17 columns, canonical camelCase SQL identifiers, SQL table name `session`.
    No columns added or removed (the online-token / refresh-token columns stay
-   even though offline-only auth leaves them null). (ADR 0005 §Session schema)
+   even though offline-only auth leaves them null). (ADR 0005 Session schema)
 4. `client.ts`: `pg` `Pool` from `process.env.DATABASE_URL` +
    `drizzle(pool, { schema })`. Export `db` and
    `sessionStorage = new DrizzleSessionStoragePostgres(db, sessionTable)` — the
    constructor's second arg takes a single `as` cast (the branded table type is
    not exported). **Top-of-file comment: this module is a deployment portability
    swap point** — `pg` uses `node:net`/`node:tls`; a Workers target swaps a
-   serverless/HTTP driver behind the same `SessionStorage`. (ADR 0005 §Why, ADR 0009)
+   serverless/HTTP driver behind the same `SessionStorage`. (ADR 0005 Why, ADR 0009)
 5. `drizzle.config.ts` + `db:generate` (committed SQL) / `db:migrate`
    (`drizzle-kit migrate`) / `db:seed`. **No `drizzle-kit push`, no migrate-on-boot.**
    `seed.ts` is a documented bare stub — **no example app table**. `pnpm db:up` =
-   `docker compose up -d --wait` → `db:migrate` → `db:seed`. (ADR 0005 §Migrations)
+   `docker compose up -d --wait` → `db:migrate` → `db:seed`. (ADR 0005 Migrations)
 
 **Integration point produced:** **IP-2** — the `sessionStorage` instance.
 
@@ -199,16 +199,16 @@ to the ADRs, no blocking.
    WS4), `/clients` → `./src/clients/index.ts` (WS3), `/adapters/node` →
    `./src/adapters/node.ts`. **Documented-but-unshipped** slots `/adapters/web-api`
    and `/adapters/cf-worker` (ADR 0009). `peerDependencies` on the app-facing libs
-   via `catalog:`. (ADR 0001 §exports, ADR 0009 §adapter family)
+   via `catalog:`. (ADR 0001 exports, ADR 0009 adapter family)
 2. `server/config.ts`: the `AppConfigArg` type — RR's field **names kept**, minus
    legacy-OAuth `begin`/`callback`, `restResources`, `isCustomStoreApp`;
    `distribution` supports `AppStore` (default) + `SingleMerchant`, `ShopifyAdmin`
    throws. `deriveConfig`/`deriveApi` (`appUrl` → `hostName`, force
-   `isEmbeddedApp: true`). (ADR 0001 §Config object)
+   `isEmbeddedApp: true`). (ADR 0001 Config object)
 3. `adapters/node.ts`: import `@shopify/shopify-api/adapters/node`, call
    `setAbstractRuntimeString(() => 'TanStack Start (Node)')`, export nothing. The
    package's own code imports `@shopify/shopify-api/adapters/web-api` for Web Crypto
-   at baseline. (ADR 0009 §adapter family)
+   at baseline. (ADR 0009 adapter family)
 4. `server/auth/request-middleware.ts`: the eager global `createMiddleware`
    (type `'request'`) pipeline — `Bearer`/`?id_token` → `api.session.decodeSessionToken`
    → `getOfflineId(shop)` → `sessionStorage.loadSession` → if missing or within the
@@ -217,14 +217,14 @@ to the ADRs, no blocking.
    `storeSession` → `hooks.afterAuth` **once** (60s-TTL idempotent handler) →
    per-shop in-flight de-dupe `Map`. Puts `{ session, shop, sessionToken }` on
    server-only middleware context. **Never throws for missing auth.** Honours the
-   path-exclusion list (**IP-7**, values owned by WS7). (ADR 0002 §Auth boundary)
+   path-exclusion list (**IP-7**, values owned by WS7). (ADR 0002 Auth boundary)
    *In-memory `Map` + idempotent handler are per-process — documented
    single-instance limitation (ADR 0009), do not add a seam.*
 5. `server/auth/admin-middleware.ts`: function middleware for Admin-touching
    `createServerFn`s — reload/ensure-active against the `Bearer`, build the `admin`
    client (from WS3's factory, **IP-4**), Admin `401` → `invalidateAccessToken` +
    retry response. Context: `{ admin, session, scopes, billing }` (`billing`
-   contract reserved, helpers deferred). (ADR 0002 §layer 2, ADR 0003 §1)
+   contract reserved, helpers deferred). (ADR 0002 layer 2, ADR 0003 1)
 6. `server/auth/{bounce,exit-iframe,install-url,headers}.ts`:
    `redirectToBouncePage` + `renderAppBridge` HTML (`shopify-reload`,
    `Cache-Control: no-store`, per-shop-sanitised CSP `frame-ancestors`);
@@ -233,7 +233,7 @@ to the ADRs, no blocking.
    `frame-ancestors` for document responses — **IP-9**). RR-exact failure contract:
    `401` + `X-Shopify-Retry-Invalid-Session-Request: 1` for XHR, `302` for
    documents, `X-Shopify-API-Request-Failure-Reauthorize-Url` for scope reauth.
-   (ADR 0002 §Failure contract)
+   (ADR 0002 Failure contract)
 7. `server/routes/auth-splat.ts`: the `/auth/$` handler factory — bounce /
    `session-token` / `exit-iframe`; non-embedded (`embedded !== '1'`) →
    `getEmbeddedAppUrl` redirect. **No shop-domain login page** (ADR 0007). Exposed
@@ -243,13 +243,13 @@ to the ADRs, no blocking.
    requestMiddleware, adminMiddleware, unauthenticated, registerWebhooks,
    addDocumentResponseHeaders, handlers: { webhooks, auth }, config }` (**IP-3**).
    `index.ts` also exports error types + a `boundary`-equivalent + enum re-exports
-   from `@shopify/shopify-api`. (ADR 0001 §return value)
+   from `@shopify/shopify-api`. (ADR 0001 return value)
 9. `react/index.ts` (**IP-10**): a `React.JSX.IntrinsicElements` shim `.d.ts`
    re-declaring the `<s-*>` custom elements (`@shopify/app-bridge-types` /
    `@shopify/polaris-types` augment the *legacy global* `JSX`, which React 19
    doesn't read) + a patch for the missing `rel` on `<s-link>`; plus a 5-line
    SSR-safe `useShopify()` returning the typed `window.shopify`. **No `<Page>`
-   wrapper, no head helper, no provider.** (ADR 0006 §package `/react`)
+   wrapper, no head helper, no provider.** (ADR 0006 package `/react`)
 
 **Integration points produced:** **IP-3** (`createShopifyApp` return), **IP-4**
 (the `adminMiddleware` context — assembled with WS3), **IP-7** (`requestMiddleware`
@@ -277,19 +277,19 @@ factory it uses.
    `new api.clients.Graphql({ session, apiVersion })` /
    `createAdminApiClient({ accessToken, storeDomain, apiVersion })`. `AdminOperations`
    is imported from `@shopify/admin-api-client` and augmented by the app's generated
-   file (**IP-5**, WS7). (ADR 0003 §1)
+   file (**IP-5**, WS7). (ADR 0003 1)
 2. `clients/storefront.ts`: `storefront` = `GraphQLClient<StorefrontOperations>`
-   for the offline path only. **No authenticated `storefront`.** (ADR 0003 §capability parity)
+   for the offline path only. **No authenticated `storefront`.** (ADR 0003 capability parity)
 3. `unauthenticated.ts`: `unauthenticated.admin(shop)` / `.storefront(shop)` →
    `{ session, admin | storefront }` via `ensureValidOfflineSession(shop)`
    (`loadSession(getOfflineId(shop))`, refresh-if-near-expiry when
    `future.expiringOfflineAccessTokens`, `SessionNotFoundError` if none). Callers:
-   webhook handlers, cron, app-proxy. (ADR 0003 §2)
+   webhook handlers, cron, app-proxy. (ADR 0003 2)
 4. Export `type ShopifyRouterContext = { shop: string; isAuthenticated: boolean;
    queryClient: QueryClient }` — the **only** context that reaches the browser;
-   never holds `session` or a token. Used by WS5's `createRootRouteWithContext`. (ADR 0003 §3)
+   never holds `session` or a token. Used by WS5's `createRootRouteWithContext`. (ADR 0003 3)
 5. `clients/index.ts` → the `/clients` export (admin + storefront factories
-   together; **not** split further). (ADR 0003 §Split decision)
+   together; **not** split further). (ADR 0003 Split decision)
 
 **Integration points produced:** **IP-4** (the `admin` factory feeding
 `adminMiddleware`), **IP-5** (`GraphQLClient<AdminOperations>` typing), **IP-6-ctx**
@@ -314,12 +314,12 @@ and produces **IP-8**.
    `POST`-only. HMAC-validate via `api.webhooks.validate` over the **raw body**.
    Passes the handler `{ shop, topic, webhookId, apiVersion, payload, session? }`
    — **no `admin` client** (a handler that needs one calls
-   `unauthenticated.admin(shop)` itself). (ADR 0004 §factory)
+   `unauthenticated.admin(shop)` itself). (ADR 0004 factory)
 2. RR-exact response contract: `200` on success, `500` on handler throw, `401` on
-   bad HMAC, `400` on malformed, `405` on non-`POST`. (ADR 0004 §contract)
+   bad HMAC, `400` on malformed, `405` on non-`POST`. (ADR 0004 contract)
 3. `register.ts`: `registerWebhooks({ session })` — shipped as an **unused escape
    hatch**. Subscriptions are **toml-declared only** (WS0's `shopify.app.toml`);
-   there is no `webhooks` config field and no `afterAuth` registration. (ADR 0004 §subscriptions)
+   there is no `webhooks` config field and no `afterAuth` registration. (ADR 0004 subscriptions)
 4. `index.ts` → the `/webhooks` export.
 
 **Integration point produced:** **IP-8** — the webhook handler payload contract.
@@ -348,7 +348,7 @@ WS2 (**IP-3**, **IP-7**, **IP-9**, **IP-10**), WS3 (**IP-6-ctx**).
 2. `shopify.web.toml`: `roles = ["frontend","backend"]`, `[commands] dev = "pnpm dev"`.
    `.env.example`: `DATABASE_URL`, `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SCOPES`
    (server-only; **no `VITE_` mirror**). `apps/web/package.json` `predev` =
-   `routes:generate` + `graphql-codegen` + `db:migrate`. (ADR 0008 §`shopify app dev`)
+   `routes:generate` + `graphql-codegen` + `db:migrate`. (ADR 0008 `shopify app dev`)
 3. `app/shopify.server.ts`: `createShopifyApp({ apiKey: process.env.SHOPIFY_API_KEY,
    apiSecretKey: process.env.SHOPIFY_API_SECRET, appUrl: process.env.HOST ?? …,
    apiVersion: API_VERSION, sessionStorage, scopes: process.env.SCOPES?.split(',') })`
@@ -372,20 +372,20 @@ WS2 (**IP-3**, **IP-7**, **IP-9**, **IP-10**), WS3 (**IP-6-ctx**).
    && window.shopify)`) — they must render if App Bridge init is what failed.
    `beforeLoad` copies `{ shop, isAuthenticated }` from `serverContext` into router
    context (the SSR middleware result; ADR 0003/0007). No auth *logic* here.
-   (ADR 0006 §head, §`suppressHydrationWarning`, §error boundary)
+   (ADR 0006 head, `suppressHydrationWarning`, error boundary)
 7. `app/routes/_authenticated.tsx` (**IP-6 gate**): pathless. `beforeLoad` reads
    the dehydrated `{ shop, isAuthenticated }`; `!isAuthenticated` → `throw redirect`
    to `/auth/session-token?shopify-reload=<path>`. Renders `<s-app-nav>` + plain
    `<s-link href>` children + a `document.addEventListener('shopify:navigate', e =>
    navigate({ to: e.target.getAttribute('href') }))` listener + `<Outlet/>`. **No
-   `@shopify/polaris` `AppProvider`, no `@shopify/app-bridge-react`.** (ADR 0006 §nav, §structure)
+   `@shopify/polaris` `AppProvider`, no `@shopify/app-bridge-react`.** (ADR 0006 nav, structure)
 
 **Integration points produced:** **IP-1** (root error boundary), **IP-6** (the
 `_authenticated` gate + chrome), **IP-9** (head).
 
 **Done when:** `pnpm --filter web dev` boots; a direct (non-embedded) load renders
 the `<s-page>` shell and the error boundary survives blocking `polaris.js`; the
-embedded run is verified in a dev store (see §7).
+embedded run is verified in a dev store (see 7).
 
 ---
 
@@ -411,33 +411,33 @@ typing), WS4 (**IP-8** webhooks factory), WS5 (`_authenticated`, `__root`,
    `apiVersion` imported from `apps/web/app/shopify.config.ts`,
    `documents: ['app/**/*.{ts,tsx}', '!app/types/**']`, output →
    `apps/web/app/types/admin.{generated.d.ts,types.d.ts}`. `graphql-codegen` script;
-   commit both files. (ADR 0007 §codegen)
+   commit both files. (ADR 0007 codegen)
 2. `routes/index.tsx` (`/`): `?shop`/`host` present → `redirect({ href:
    `/app${location.searchStr}` })`; otherwise render a minimal `<s-page>` +
    `<s-banner tone="warning">` "This app must be opened from your Shopify admin."
-   No form, no other redirect. (ADR 0007 §route tree)
+   No form, no other redirect. (ADR 0007 route tree)
 3. `routes/_authenticated/app/index.tsx`: `<s-page>`. `loader` = thin initial read
    (`shop`/`apiKey` from context). A "Generate a product" button → `useMutation` →
    `generateProduct()` server fn (**step 5**). Render result as `<pre>` JSON +
    `<s-link href="shopify://admin/products/{id}">`. `router.invalidate()` on
-   success. (ADR 0007 §index page, §data-flow)
+   success. (ADR 0007 index page, data-flow)
 4. `routes/_authenticated/app/additional.tsx`: static Polaris web-component content;
-   nav-demo target, no Admin calls. (ADR 0007 §route tree)
+   nav-demo target, no Admin calls. (ADR 0007 route tree)
 5. `app/server/generate-product.ts`: `createServerFn({ method: 'POST' })
    .middleware([adminMiddleware])` running `productCreate` then
    `productVariantsBulkUpdate` (verbatim from the RR template) via `context.admin.graphql`.
-   The `#graphql` strings here are what codegen (step 1) generates from. (ADR 0007 §Q3)
+   The `#graphql` strings here are what codegen (step 1) generates from. (ADR 0007 Q3)
 6. `routes/auth/$.ts`: server route mounting `shopify.handlers.auth`. (ADR 0002/0007)
 7. `routes/webhooks/app.uninstalled.ts`, `app.scopes_update.ts`, `compliance.$.ts`:
    server routes wiring `shopify.handlers.webhooks` (**IP-8**). `app/uninstalled`
    deletes the offline session; `app/scopes_update` persists `payload.current` →
    `Session.scope` + `storeSession`; `compliance.$` returns GDPR `200` stubs for
-   the three topics. (ADR 0004 §starter routes)
+   the three topics. (ADR 0004 starter routes)
 8. **Path-exclusion list** (**IP-7**): the middleware skips `/` exactly, `/auth`,
    `/auth/*`, `/webhooks/*`. Everything else goes through embedded auth. Hand this
-   list to WS2's `requestMiddleware` as its exclusion config. (ADR 0007 §exclusion list)
+   list to WS2's `requestMiddleware` as its exclusion config. (ADR 0007 exclusion list)
 9. Route file-naming: **directory-nested** convention (documented, unenforced —
-   TanStack's generator accepts flat + nested). (ADR 0008 §Turbo pipeline)
+   TanStack's generator accepts flat + nested). (ADR 0008 Turbo pipeline)
 
 **Integration point produced:** **IP-7** (the exclusion-list values).
 
@@ -451,16 +451,16 @@ three webhook routes return `200` for a valid signed payload and `401` for a bad
 
 | # | Contract | Produced by | Consumed by | Source of truth |
 |---|---|---|---|---|
-| **IP-1** | Root `errorComponent` / `notFoundComponent` — `<s-*>` markup, **guard** `window.shopify`, must render without App Bridge | WS5 | — | ADR 0006 §error boundary |
+| **IP-1** | Root `errorComponent` / `notFoundComponent` — `<s-*>` markup, **guard** `window.shopify`, must render without App Bridge | WS5 | — | ADR 0006 error boundary |
 | **IP-2** | `sessionStorage` — a `DrizzleSessionStoragePostgres` behind the `SessionStorage` interface | WS1 | WS5 (`shopify.server.ts`) | ADR 0005, ADR 0003 |
-| **IP-3** | `createShopifyApp(config)` return object `{ api, sessionStorage, requestMiddleware, adminMiddleware, unauthenticated, registerWebhooks, addDocumentResponseHeaders, handlers, config }` | WS2 | WS5, WS7 | ADR 0001 §return value |
-| **IP-4** | `adminMiddleware` context `{ admin, session, scopes, billing }` (server-only; `billing` reserved) | WS2 (assembled) + WS3 (`admin` factory) | WS7 server fns | ADR 0003 §1, ADR 0002 §layer 2 |
-| **IP-5** | `admin.graphql()` → parsed `{ data, errors, extensions }`; typed `GraphQLClient<AdminOperations>` where `AdminOperations` (from `@shopify/admin-api-client`) is augmented by `apps/web/app/types/admin.generated.d.ts` | WS3 + WS7 (codegen) | WS7 | ADR 0003, ADR 0007 §codegen |
-| **IP-6** | The pathless `_authenticated` gate: `beforeLoad` on dehydrated `{ shop, isAuthenticated }` → bounce; renders `<s-app-nav>` + `shopify:navigate` listener + `<Outlet/>`. Its context type `{ shop, isAuthenticated, queryClient }` | WS5 (gate) + WS3 (type) | WS7 (pages sit under it) | ADR 0006 §structure, ADR 0003 §3 |
-| **IP-7** | Global `requestMiddleware` + its **path-exclusion list** (`/` exact, `/auth*`, `/webhooks/*`) | WS2 (middleware) + WS7 (list values) | WS5 (`start.ts` registers it) | ADR 0002, ADR 0007 §exclusion list |
+| **IP-3** | `createShopifyApp(config)` return object `{ api, sessionStorage, requestMiddleware, adminMiddleware, unauthenticated, registerWebhooks, addDocumentResponseHeaders, handlers, config }` | WS2 | WS5, WS7 | ADR 0001 return value |
+| **IP-4** | `adminMiddleware` context `{ admin, session, scopes, billing }` (server-only; `billing` reserved) | WS2 (assembled) + WS3 (`admin` factory) | WS7 server fns | ADR 0003 1, ADR 0002 layer 2 |
+| **IP-5** | `admin.graphql()` → parsed `{ data, errors, extensions }`; typed `GraphQLClient<AdminOperations>` where `AdminOperations` (from `@shopify/admin-api-client`) is augmented by `apps/web/app/types/admin.generated.d.ts` | WS3 + WS7 (codegen) | WS7 | ADR 0003, ADR 0007 codegen |
+| **IP-6** | The pathless `_authenticated` gate: `beforeLoad` on dehydrated `{ shop, isAuthenticated }` → bounce; renders `<s-app-nav>` + `shopify:navigate` listener + `<Outlet/>`. Its context type `{ shop, isAuthenticated, queryClient }` | WS5 (gate) + WS3 (type) | WS7 (pages sit under it) | ADR 0006 structure, ADR 0003 3 |
+| **IP-7** | Global `requestMiddleware` + its **path-exclusion list** (`/` exact, `/auth*`, `/webhooks/*`) | WS2 (middleware) + WS7 (list values) | WS5 (`start.ts` registers it) | ADR 0002, ADR 0007 exclusion list |
 | **IP-8** | Webhook handler payload `{ shop, topic, webhookId, apiVersion, payload, session? }` + `200/500/401/400/405` contract | WS4 | WS7 webhook routes | ADR 0004 |
-| **IP-9** | `__root` head: literal non-async `<meta shopify-api-key>` → `app-bridge.js` → `polaris.js` before `<HeadContent/>`; `apiKey` from a server-only `process.env.SHOPIFY_API_KEY` read. `addDocumentResponseHeaders` sets per-shop CSP `frame-ancestors` from the middleware | WS5 (head) + WS2 (`addDocumentResponseHeaders`) | — | ADR 0006 §head, ADR 0008 §env |
-| **IP-10** | Package `/react`: `React.JSX.IntrinsicElements` shim `.d.ts` (+ `<s-link rel>` patch) + `useShopify()` | WS2 | WS5, WS7 | ADR 0006 §package `/react` |
+| **IP-9** | `__root` head: literal non-async `<meta shopify-api-key>` → `app-bridge.js` → `polaris.js` before `<HeadContent/>`; `apiKey` from a server-only `process.env.SHOPIFY_API_KEY` read. `addDocumentResponseHeaders` sets per-shop CSP `frame-ancestors` from the middleware | WS5 (head) + WS2 (`addDocumentResponseHeaders`) | — | ADR 0006 head, ADR 0008 env |
+| **IP-10** | Package `/react`: `React.JSX.IntrinsicElements` shim `.d.ts` (+ `<s-link rel>` patch) + `useShopify()` | WS2 | WS5, WS7 | ADR 0006 package `/react` |
 
 ---
 
@@ -528,4 +528,4 @@ Not new tickets — things a decision flagged for confirmation during the build:
 ## 8. Suggested execution order for a single agent
 
 `WS0` → (`WS1`, `WS2`, `WS3`, `WS4` in any order; do `WS2`+`WS3` close together
-for the IP-4 handshake) → `WS5` → `WS7` → §7 checklist.
+for the IP-4 handshake) → `WS5` → `WS7` → 7 checklist.

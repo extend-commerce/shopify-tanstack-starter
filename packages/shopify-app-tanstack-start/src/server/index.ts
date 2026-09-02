@@ -1,5 +1,5 @@
 /**
- * The `shopify-app-tanstack-start` main (`.`) entry (ADR 0001 §exports).
+ * The `shopify-app-tanstack-start` main (`.`) entry (ADR 0001 exports).
  *
  * `createShopifyApp(config)` + config helpers, the auth failure-contract
  * primitives, `unauthenticated.*`, the client-safe router-context type, the

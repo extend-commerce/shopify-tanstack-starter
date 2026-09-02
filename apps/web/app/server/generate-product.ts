@@ -3,11 +3,11 @@ import { createServerFn } from '@tanstack/react-start';
 import { adminMiddleware } from '~/shopify.middleware';
 
 /**
- * The Admin GraphQL demo (ADR 0007 §Q3), ported verbatim from the React Router
+ * The Admin GraphQL demo (ADR 0007 Q3), ported verbatim from the React Router
  * template's `app._index` action: create a random product, then set its single
  * variant's price with a chained second mutation.
  *
- * Shape of the starter's canonical write path (ADR 0007 §data-flow):
+ * Shape of the starter's canonical write path (ADR 0007 data-flow):
  *   - a `POST` `createServerFn` carrying `adminMiddleware` (IP-4) — the ONLY way
  *     Admin API access happens; the access token never reaches a loader/route.
  *   - the client calls it from `useMutation`, then `router.invalidate()`.

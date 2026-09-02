@@ -15,7 +15,7 @@ function escapeHtml(value: string): string {
 }
 
 /**
- * `renderAppBridge` (ADR 0002 §3.4, RR parity).
+ * `renderAppBridge` (ADR 0002 3.4, RR parity).
  *
  * The App Bridge `shopify-reload` HTML: loads `app-bridge.js` with the API key so
  * App Bridge can (a) reload the parent frame to the `shopify-reload` query param
@@ -60,7 +60,7 @@ export function renderAppBridge(
 }
 
 /**
- * `redirectToBouncePage` (ADR 0002 §3.4, RR parity): strip `id_token`, set
+ * `redirectToBouncePage` (ADR 0002 3.4, RR parity): strip `id_token`, set
  * `shopify-reload=<path>?<params>`, `throw redirect()` to the bounce route.
  */
 export function redirectToBouncePage(config: DerivedConfig, url: URL): never {

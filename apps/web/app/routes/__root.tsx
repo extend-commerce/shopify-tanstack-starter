@@ -35,7 +35,7 @@ export const Route = createRootRouteWithContext<ShopifyRouterContext>()({
   },
   loader: () => ({
     // Public client ID. Server-only read of the CLI-injected var — there is no
-    // `VITE_` mirror (ADR 0008 §env). `undefined` on the client; the value is
+    // `VITE_` mirror (ADR 0008 env). `undefined` on the client; the value is
     // dehydrated from SSR loader data.
     apiKey: process.env.SHOPIFY_API_KEY ?? '',
   }),
@@ -56,7 +56,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     /*
      * `suppressHydrationWarning` on BOTH <html> and <head> is LOAD-BEARING
-     * (ADR 0006 §suppressHydrationWarning). `app-bridge.js` + `polaris.js` run
+     * (ADR 0006 suppressHydrationWarning). `app-bridge.js` + `polaris.js` run
      * from <head> before React hydrates and mutate <head> and <body>
      * (`polaris.js` upgrades <s-page> and relocates its slotted children).
      * Without this, React 19's "won't be patched up" mismatch cascades and
@@ -66,7 +66,7 @@ function RootDocument({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head suppressHydrationWarning>
         {/*
-          App Bridge contract (ADR 0006 §head) — three LITERAL, non-async tags,
+          App Bridge contract (ADR 0006 head) — three LITERAL, non-async tags,
           in this order, BEFORE <HeadContent />:
             1. <meta shopify-api-key> parsed before app-bridge.js executes
             2. app-bridge.js render-blocking (no async) so window.shopify exists
@@ -92,7 +92,7 @@ function RootDocument({ children }: { children: ReactNode }) {
 /**
  * `polaris.js` is a plain <head> script independent of `app-bridge.js` and runs
  * before any route render, so `<s-*>` chrome is always available in an error UI
- * (ADR 0006 §error boundary / IP-1). App Bridge is GUARDED, not banned: the usual
+ * (ADR 0006 error boundary / IP-1). App Bridge is GUARDED, not banned: the usual
  * failure cases (loader throw, render error, server 500) happen in a fully
  * authenticated embedded session where `window.shopify` is present — but this UI
  * must still render when the failure *is* App Bridge init, so every

@@ -1,5 +1,5 @@
 /**
- * WS4 — `registerWebhooks` (ADR 0004 §Registration).
+ * WS4 — `registerWebhooks` (ADR 0004 Registration).
  *
  * Shipped as a DOCUMENTED, UNUSED escape hatch. The starter subscribes to
  * webhooks **only** through `shopify.app.toml` `[[webhooks.subscriptions]]` —

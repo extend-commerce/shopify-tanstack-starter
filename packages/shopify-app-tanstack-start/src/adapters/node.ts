@@ -1,5 +1,5 @@
 /**
- * Node runtime adapter (ADR 0009 §runtime-adapter family).
+ * Node runtime adapter (ADR 0009 runtime-adapter family).
  *
  * Import once, for effect, at the top of the consumer's `src/start.ts`:
  *

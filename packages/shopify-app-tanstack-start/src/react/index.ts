@@ -1,5 +1,5 @@
 /**
- * The `shopify-app-tanstack-start/react` entry (IP-10 / ADR 0006 §package `/react`).
+ * The `shopify-app-tanstack-start/react` entry (IP-10 / ADR 0006 package `/react`).
  *
  * Exactly two shell-universal items:
  *   1. A `React.JSX` shim `.d.ts` for the `<s-*>` custom elements + an `<s-link rel>`
@@ -8,7 +8,7 @@
  *   2. `useShopify()` — an SSR-safe accessor for the typed `window.shopify`.
  *
  * NO `<Page>` wrapper, NO head helper, NO provider component. The head stack is
- * three literal lines the app owns in `__root.tsx` (ADR 0006 §head).
+ * three literal lines the app owns in `__root.tsx` (ADR 0006 head).
  */
 import type { ShopifyGlobal } from './shopify-elements';
 

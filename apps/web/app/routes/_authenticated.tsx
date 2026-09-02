@@ -3,7 +3,7 @@ import { Outlet, createFileRoute, redirect, useNavigate } from '@tanstack/react-
 import { QueryClientProvider } from '@tanstack/react-query';
 
 /**
- * The pathless embedded-auth UX gate (ADR 0006 §route structure / IP-6). This is
+ * The pathless embedded-auth UX gate (ADR 0006 route structure / IP-6). This is
  * the ONLY auth gate — not per-route checks. The eager global `requestMiddleware`
  * (ADR 0002) never throws for missing auth; this layout does the bounce.
  */
@@ -31,7 +31,7 @@ function AuthenticatedLayout() {
 
   // `<s-link>` clicks inside `<s-app-nav>` emit `shopify:navigate`; route them
   // through TanStack Router so there is no iframe reload. This is the ported RR
-  // `AppProvider` behaviour (ADR 0006 §navigation). Do NOT put a router `<Link>`
+  // `AppProvider` behaviour (ADR 0006 navigation). Do NOT put a router `<Link>`
   // inside the nav — its `aria-current` triggers an App Bridge warning.
   useEffect(() => {
     const onNavigate = (event: Event) => {

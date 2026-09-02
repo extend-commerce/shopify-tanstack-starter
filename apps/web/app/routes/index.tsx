@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 /**
- * `/` — the non-embedded fallback (ADR 0007 §route tree; revises ADR 0002).
+ * `/` — the non-embedded fallback (ADR 0007 route tree; revises ADR 0002).
  *
  * The embedded entry URL is `https://<host>/?embedded=1&host=…&id_token=…&shop=…`.
  * When `shop` / `host` are present we bounce to `/app`, **preserving the raw
@@ -12,7 +12,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
  * Without a resolvable `shop` (someone typed the bare app URL) we render a
  * minimal banner. NO login form, NO shop-domain entry field, NO other redirect —
  * a managed-install embedded app reached without a shop context has nothing
- * useful to ask (ADR 0007 §Why).
+ * useful to ask (ADR 0007 Why).
  *
  * `/` is on the IP-7 exclusion list, so the eager auth middleware never runs here.
  */

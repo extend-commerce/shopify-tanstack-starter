@@ -5,13 +5,13 @@ import { useMutation } from '@tanstack/react-query';
 import { generateProduct, type GenerateProductResult } from '~/server/generate-product';
 
 /**
- * `/app` index (ADR 0007 §index page). `<s-page>`, a thin `loader` read, and the
+ * `/app` index (ADR 0007 index page). `<s-page>`, a thin `loader` read, and the
  * canonical write path: a `POST` server fn (`generateProduct`, carrying
  * `adminMiddleware`) invoked from `useMutation`, then `router.invalidate()`.
  *
  * The result is rendered as `<pre>` JSON plus an `<s-link>` deep link into the
  * admin — `shopify://admin/...` is resolved by App Bridge when embedded (inert on
- * the rare non-embedded render, acceptable for a demo — ADR 0007 §Consequences).
+ * the rare non-embedded render, acceptable for a demo — ADR 0007 Consequences).
  */
 export const Route = createFileRoute('/_authenticated/app/')({
   loader: ({ context }) => ({ shop: context.shop }),

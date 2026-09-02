@@ -6,7 +6,7 @@
 // `SessionStorage` interface — nothing outside this module changes.
 //
 // This is one of the two sanctioned exceptions to the "no `node:*` in app server
-// code" rule (BUILD-PLAN §6.2); `apps/web/vite.config.ts` / the nitro preset is
+// code" rule (BUILD-PLAN 6.2); `apps/web/vite.config.ts` / the nitro preset is
 // the other.
 //
 // Env note: the cross-cutting rule is "read env per request, never at module
@@ -39,5 +39,5 @@ export const db = drizzle(pool, { schema });
 // but nominally-distinct declaration. `as never` documents "the required type is
 // not importable" while satisfying the call — the guarantee that the shape
 // matches is the verbatim copy + the committed migration, not this cast
-// (ADR 0005 §Consequences: re-diff `schema.ts` on adapter bumps).
+// (ADR 0005 Consequences: re-diff `schema.ts` on adapter bumps).
 export const sessionStorage = new DrizzleSessionStoragePostgres(db, schema.sessionTable as never);
