@@ -11,4 +11,4 @@
  * The one copy that cannot import this module is `shopify.app.toml`'s
  * `[webhooks] api_version`; it carries a "keep in sync" comment.
  */
-export const API_VERSION = '2025-10' as const;
+export const API_VERSION = '2026-07' as const;

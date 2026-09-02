@@ -17,7 +17,7 @@ redirect_urls = ["https://example.com/auth"]
 
 [webhooks]
 # keep in sync with apps/web/app/shopify.config.ts (API_VERSION)
-api_version = "2025-10"
+api_version = "2026-07"
 
 [[webhooks.subscriptions]]
 topics = ["app/uninstalled"]
