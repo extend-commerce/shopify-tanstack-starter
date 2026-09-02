@@ -10,7 +10,7 @@
 // `refreshTokenExpires`) stay even though offline-only auth (ADR 0002) leaves
 // them null.
 
-import {bigint, boolean, pgTable, text, timestamp} from 'drizzle-orm/pg-core';
+import { bigint, boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const sessionTable = pgTable('session' as string, {
   id: text('id').primaryKey(),
@@ -18,9 +18,9 @@ export const sessionTable = pgTable('session' as string, {
   state: text('state').notNull(),
   isOnline: boolean('isOnline').default(false).notNull(),
   scope: text('scope'),
-  expires: timestamp('expires', {mode: 'date'}),
+  expires: timestamp('expires', { mode: 'date' }),
   accessToken: text('accessToken').notNull(),
-  userId: bigint('userId', {mode: 'number'}),
+  userId: bigint('userId', { mode: 'number' }),
   firstName: text('firstName'),
   lastName: text('lastName'),
   email: text('email'),
@@ -29,7 +29,7 @@ export const sessionTable = pgTable('session' as string, {
   collaborator: boolean('collaborator'),
   emailVerified: boolean('emailVerified'),
   refreshToken: text('refreshToken'),
-  refreshTokenExpires: timestamp('refreshTokenExpires', {mode: 'date'}),
+  refreshTokenExpires: timestamp('refreshTokenExpires', { mode: 'date' }),
 });
 
 export type PostgresSessionTable = typeof sessionTable;

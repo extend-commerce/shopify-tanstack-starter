@@ -12,11 +12,8 @@ import { createAdminMiddleware } from './auth/admin-middleware';
 import { addDocumentResponseHeaders as addDocumentResponseHeadersImpl } from './auth/headers';
 import { createAuthHandler, type AuthRouteHandler } from './routes/auth-splat';
 import { createUnauthenticated, type Unauthenticated } from '../unauthenticated';
-import {
-  createWebhookHandlers,
-  type WebhookHandlers,
-  type WebhookRouteHandler,
-} from '../webhooks/index';
+import { bindWebhookHandlers, type WebhookFactory } from '../webhooks/index';
+import { bindRegisterWebhooks } from '../webhooks/register';
 
 /**
  * IP-3 — the `createShopifyApp(config)` return object (ADR 0001 §return value).
@@ -36,7 +33,7 @@ export interface ShopifyApp {
   registerWebhooks: (args: { session: Session }) => Promise<unknown>;
   addDocumentResponseHeaders: (shop?: string) => void;
   handlers: {
-    webhooks: (handlers: WebhookHandlers) => WebhookRouteHandler;
+    webhooks: WebhookFactory;
     auth: AuthRouteHandler;
   };
   config: DerivedConfig;
@@ -51,17 +48,23 @@ export function createShopifyApp(config: AppConfigArg): ShopifyApp {
     config: derivedConfig,
   };
 
+  const unauthenticated = createUnauthenticated(internals);
+
   return {
     api,
     sessionStorage: config.sessionStorage,
     requestMiddleware: createRequestMiddleware(internals),
     adminMiddleware: createAdminMiddleware(internals),
-    unauthenticated: createUnauthenticated(internals),
-    registerWebhooks: ({ session }) => api.webhooks.register({ session }),
+    unauthenticated,
+    registerWebhooks: bindRegisterWebhooks(api),
     addDocumentResponseHeaders: (shop) => addDocumentResponseHeadersImpl(api, shop),
     handlers: {
-      // WS4 owns the real `createWebhookHandlers`; the merge takes its version.
-      webhooks: (handlers) => createWebhookHandlers(internals, handlers),
+      // IP-8 seam: pre-bind WS4's factory with the offline-session resolver so
+      // webhook deliveries never build an Admin client (ADR 0004).
+      webhooks: bindWebhookHandlers({
+        api,
+        ensureValidOfflineSession: unauthenticated.ensureValidOfflineSession,
+      }),
       auth: createAuthHandler(internals),
     },
     config: derivedConfig,

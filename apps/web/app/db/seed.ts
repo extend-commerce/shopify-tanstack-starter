@@ -8,13 +8,11 @@
 // db:seed) so that an app author who adds their own tables against `schema.ts`
 // has a wired seed step with nothing to un-comment.
 
-import {db} from './client';
+import { db } from './client';
 
 async function seed(): Promise<void> {
   void db;
-  console.log(
-    'db:seed — no seed data (session storage is the only persisted table — ADR 0005).',
-  );
+  console.log('db:seed — no seed data (session storage is the only persisted table — ADR 0005).');
 }
 
 seed()

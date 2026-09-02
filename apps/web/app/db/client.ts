@@ -15,9 +15,9 @@
 // serverless swap that recreates the client per request would read
 // `process.env.DATABASE_URL` inside the request scope instead.
 
-import {DrizzleSessionStoragePostgres} from '@shopify/shopify-app-session-storage-drizzle';
-import {drizzle} from 'drizzle-orm/node-postgres';
-import {Pool} from 'pg';
+import { DrizzleSessionStoragePostgres } from '@shopify/shopify-app-session-storage-drizzle';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 import * as schema from './schema';
 
@@ -28,9 +28,9 @@ if (!connectionString) {
   );
 }
 
-const pool = new Pool({connectionString});
+const pool = new Pool({ connectionString });
 
-export const db = drizzle(pool, {schema});
+export const db = drizzle(pool, { schema });
 
 // The constructor's 2nd parameter is typed `typeof` the adapter's OWN internal
 // `sessionTable` (a branded Drizzle `PgTableWithColumns` type). The adapter
@@ -40,7 +40,4 @@ export const db = drizzle(pool, {schema});
 // not importable" while satisfying the call — the guarantee that the shape
 // matches is the verbatim copy + the committed migration, not this cast
 // (ADR 0005 §Consequences: re-diff `schema.ts` on adapter bumps).
-export const sessionStorage = new DrizzleSessionStoragePostgres(
-  db,
-  schema.sessionTable as never,
-);
+export const sessionStorage = new DrizzleSessionStoragePostgres(db, schema.sessionTable as never);

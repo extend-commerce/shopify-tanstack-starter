@@ -15,6 +15,9 @@ node_modules/
 # Shopify CLI local state
 .shopify/
 
+# Claude Code local state (agent worktrees, etc.)
+.claude/
+
 # local prototype workspace — reference only, lives on branch prototype/appbridge-polaris-ssr
 /prototype/
 

@@ -1,4 +1,4 @@
-import {defineConfig} from 'drizzle-kit';
+import { defineConfig } from 'drizzle-kit';
 
 // drizzle-kit is the sole migration authority (ADR 0005): `pnpm db:generate`
 // writes committed SQL under ./app/db/migrations, `pnpm db:migrate` applies it.
@@ -15,5 +15,5 @@ export default defineConfig({
   dialect: 'postgresql',
   schema: './app/db/schema.ts',
   out: './app/db/migrations',
-  dbCredentials: {url},
+  dbCredentials: { url },
 });

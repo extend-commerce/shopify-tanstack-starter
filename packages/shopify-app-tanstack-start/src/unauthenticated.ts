@@ -15,6 +15,14 @@ export class SessionNotFoundError extends Error {
 export interface Unauthenticated {
   admin: (shop: string) => Promise<{ session: Session; admin: AdminApiContext }>;
   storefront: (shop: string) => Promise<{ session: Session; storefront: StorefrontApiContext }>;
+  /**
+   * The offline-session resolver behind `admin`/`storefront`, exposed so
+   * `createShopifyApp` can hand it to the webhook factory (IP-8) without building
+   * an Admin client per delivery. Throws `SessionNotFoundError` when the shop has
+   * no usable offline session (the webhook factory catches that → `session:
+   * undefined`).
+   */
+  ensureValidOfflineSession: (shop: string) => Promise<Session>;
 }
 
 /**
@@ -50,6 +58,7 @@ export function createUnauthenticated(internals: ShopifyAppInternals): Unauthent
   }
 
   return {
+    ensureValidOfflineSession,
     admin: async (shop: string) => {
       const session = await ensureValidOfflineSession(shop);
       return { session, admin: createAdminApiContext(session, config.apiVersion) };

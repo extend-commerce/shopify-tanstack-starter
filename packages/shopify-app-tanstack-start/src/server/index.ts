@@ -73,12 +73,15 @@ export {
   type Unauthenticated,
 } from '../unauthenticated';
 
-// Webhook types (WS4 owns the real factory; re-exported here for consumers).
+// Webhook factory + types (ADR 0004; full surface at `shopify-app-tanstack-start/webhooks`).
+export { createWebhookHandler, bindWebhookHandlers } from '../webhooks/index';
+export { registerWebhooks, bindRegisterWebhooks } from '../webhooks/register';
 export type {
   WebhookHandler,
-  WebhookHandlers,
-  WebhookHandlerInput,
-  WebhookRouteHandler,
+  WebhookHandlerMap,
+  WebhookContext,
+  WebhookRoute,
+  WebhookFactory,
 } from '../webhooks/index';
 
 export { SHOPIFY_APP_TANSTACK_START_VERSION } from '../version';
