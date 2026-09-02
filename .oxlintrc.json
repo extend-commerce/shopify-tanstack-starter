@@ -1,0 +1,92 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "plugins": ["react", "typescript", "import", "jsx-a11y"],
+  "env": {
+    "browser": true,
+    "es2024": true,
+    "node": true
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/.output/**",
+    "**/.nitro/**",
+    "**/dist/**",
+    "**/.turbo/**",
+    "**/routeTree.gen.ts",
+    "apps/web/app/types/*.generated.d.ts",
+    "apps/web/app/db/migrations/**"
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@shopify/polaris",
+            "message": "Polaris React is forbidden (ADR 0006). Use the CDN Polaris web components (<s-page>, <s-link>, <s-app-nav>, ...) loaded via polaris.js in __root."
+          },
+          {
+            "name": "@shopify/polaris-icons",
+            "message": "Polaris React is forbidden (ADR 0006). Use the CDN Polaris web components instead."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["packages/*/src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@shopify/polaris",
+                "message": "Polaris React is forbidden (ADR 0006)."
+              },
+              {
+                "name": "@shopify/polaris-icons",
+                "message": "Polaris React is forbidden (ADR 0006)."
+              },
+              {
+                "name": "crypto",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009). Use Web Crypto via @shopify/shopify-api's adapter; webhook HMAC is api.webhooks.validate."
+              },
+              {
+                "name": "fs",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009). No filesystem access in glue code."
+              },
+              {
+                "name": "path",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009)."
+              },
+              {
+                "name": "net",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009)."
+              },
+              {
+                "name": "tls",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009)."
+              },
+              {
+                "name": "stream",
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009). Use the Web Streams API."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["node:*"],
+                "message": "Package src/** must stay runtime-agnostic (ADR 0009): no node:* built-ins. Web Request/Response + getRequest() only; Web Crypto via @shopify/shopify-api's adapter."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

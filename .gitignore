@@ -1,0 +1,22 @@
+node_modules/
+**/.output/
+**/.nitro/
+**/dist/
+.turbo/
+
+# env files — keep the committed example
+.env
+.env.*
+!.env.example
+
+# generated route tree (regenerated on every dev/build and in predev) — ADR 0008
+**/routeTree.gen.ts
+
+# Shopify CLI local state
+.shopify/
+
+# local prototype workspace — reference only, lives on branch prototype/appbridge-polaris-ssr
+/prototype/
+
+.DS_Store
+*.log

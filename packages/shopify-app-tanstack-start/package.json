@@ -1,0 +1,12 @@
+{
+  "name": "shopify-app-tanstack-start",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//": "WS0 stub. WS2 owns the real exports map (. /react /webhooks /clients /adapters/node), peerDependencies (catalog:), and src/. WS3 and WS4 add files under src/. See docs/BUILD-PLAN.md and ADR 0001.",
+  "exports": {
+    ".": "./src/server/index.ts"
+  },
+  "peerDependencies": {},
+  "devDependencies": {}
+}

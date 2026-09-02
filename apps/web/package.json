@@ -1,0 +1,9 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "//": "WS0 stub. WS5 owns the real scripts (dev/build/predev), vite.config.ts, and app deps; WS1 owns the db:* scripts. See docs/BUILD-PLAN.md.",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {}
+}

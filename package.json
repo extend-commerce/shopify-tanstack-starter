@@ -1,0 +1,28 @@
+{
+  "name": "shopify-tanstack-starter",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.2+sha512.0e308ff2005fc7410366f154f625f6631ab2b16b1d2e70238444dd6ae9d630a8482d92a451144debc492416896ed16f7b114a86ec68b8404b2443869e68ffda6",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "pnpm --filter web db:up",
+    "db:generate": "pnpm --filter web db:generate",
+    "db:migrate": "pnpm --filter web db:migrate",
+    "db:seed": "pnpm --filter web db:seed"
+  },
+  "devDependencies": {
+    "oxlint": "1.81.0",
+    "prettier": "3.9.6",
+    "turbo": "2.10.12",
+    "typescript": "catalog:"
+  }
+}
