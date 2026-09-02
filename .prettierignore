@@ -1,5 +1,5 @@
 **/routeTree.gen.ts
-apps/web/app/types/*.generated.d.ts
+apps/web/app/types/
 **/.output
 **/.nitro
 **/dist

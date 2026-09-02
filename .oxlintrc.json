@@ -17,10 +17,11 @@
     "**/dist/**",
     "**/.turbo/**",
     "**/routeTree.gen.ts",
-    "apps/web/app/types/*.generated.d.ts",
+    "apps/web/app/types/**",
     "apps/web/app/db/migrations/**"
   ],
   "rules": {
+    "react/react-in-jsx-scope": "off",
     "no-restricted-imports": [
       "error",
       {

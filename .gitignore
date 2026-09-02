@@ -12,6 +12,11 @@ node_modules/
 # generated route tree (regenerated on every dev/build and in predev) — ADR 0008
 **/routeTree.gen.ts
 
+# GraphQL codegen intermediate schema dump (ADR 0007). The committed
+# app/types/admin.{types,generated}.d.ts are what a fresh `pnpm i` needs; this
+# multi-MB introspection JSON is re-fetched by `pnpm --filter web graphql-codegen`.
+apps/web/app/types/*.schema.json
+
 # Shopify CLI local state
 .shopify/
 
