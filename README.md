@@ -32,9 +32,12 @@ shopify app dev      # runs apps/web's Vite directly, tunnels, injects env
 ```
 
 `shopify app dev` injects `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SCOPES`,
-`HOST`, and `PORT`. For a bare `pnpm dev` without the CLI, copy
-`apps/web/.env.example` to `apps/web/.env` and fill in the values (plus
-`DATABASE_URL`, which `pnpm db:up` expects).
+`HOST`, and `PORT` directly. Everything else comes from **one `.env` at the repo
+root** (next to `shopify.app.toml` — this is where `shopify app env pull` writes).
+Copy `.env.example` to `.env` and set `DATABASE_URL` (always needed); add the
+`SHOPIFY_*` values too if you run `pnpm --filter web dev` / `start` without the
+CLI. Vite forwards the root `.env` onto `process.env` for the app; `drizzle-kit`,
+`db:seed`, and `start` load it themselves.
 
 ## Scripts
 

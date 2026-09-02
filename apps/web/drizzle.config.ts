@@ -1,7 +1,10 @@
+import { resolve } from 'node:path';
+import { config as loadEnv } from 'dotenv';
 import { defineConfig } from 'drizzle-kit';
-import dotenv from 'dotenv';
 
-dotenv.config();
+// `drizzle-kit` is a standalone CLI (not run through Vite), so it loads the
+// monorepo-root `.env` itself. dotenv never overrides an already-set var.
+loadEnv({ path: resolve(import.meta.dirname, '../../.env') });
 
 // drizzle-kit is the sole migration authority (ADR 0005): `pnpm db:generate`
 // writes committed SQL under ./app/db/migrations, `pnpm db:migrate` applies it.
@@ -10,7 +13,7 @@ dotenv.config();
 const url = process.env.DATABASE_URL;
 if (!url) {
   throw new Error(
-    'DATABASE_URL is not set. Copy apps/web/.env.example to .env (or run via `pnpm db:up`).',
+    'DATABASE_URL is not set. Copy .env.example to .env (repo root) or run `pnpm db:up`.',
   );
 }
 

@@ -1,6 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 
 import { adminMiddleware } from '~/shopify.middleware';
+import type {
+  PopulateProductMutation,
+  ShopifyTanstackTemplateUpdateVariantMutation,
+} from '~/types/admin.generated';
 
 /**
  * The Admin GraphQL demo (ADR 0007 Q3), ported verbatim from the React Router
@@ -12,12 +16,13 @@ import { adminMiddleware } from '~/shopify.middleware';
  *     Admin API access happens; the access token never reaches a loader/route.
  *   - the client calls it from `useMutation`, then `router.invalidate()`.
  *
- * `context.admin.graphql(...)` returns the PARSED `{ data, errors, extensions }`
- * (cross-cutting rule #5 / ADR 0003) — NOT a Fetch `Response`. There is no
- * `.json()` unwrap and no `.status` on the result.
- *
- * The `#graphql`-tagged template strings below are what `pnpm --filter web
- * graphql-codegen` reads to generate `app/types/admin.generated.d.ts` (IP-5).
+ * `context.admin.graphql(query, ...)` returns the PARSED `{ data, errors,
+ * extensions }` (cross-cutting rule #5 / ADR 0003) — NOT a Fetch `Response`.
+ * Because `query` is one of the `#graphql`-tagged literals below AND
+ * `@shopify/admin-api-client` is a direct dep of `apps/web`, the codegen output
+ * in `app/types/admin.generated.d.ts` module-augments the client's operation map
+ * (IP-5), so `response.data` is fully typed — no `as` casts, no hand-written
+ * result shape.
  */
 
 const PRODUCT_CREATE_MUTATION = `#graphql
@@ -66,15 +71,17 @@ const VARIANT_UPDATE_MUTATION = `#graphql
 
 const COLORS = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple'];
 
+/** Derived from the codegen output — no hand-maintained shape. */
+type CreatedProduct = NonNullable<NonNullable<PopulateProductMutation['productCreate']>['product']>;
+type UpdatedVariant = NonNullable<
+  NonNullable<
+    ShopifyTanstackTemplateUpdateVariantMutation['productVariantsBulkUpdate']
+  >['productVariants']
+>[number];
+
 export interface GenerateProductResult {
-  product: {
-    id: string;
-    title: string;
-    handle: string;
-    status: string;
-    variants: { edges: Array<{ node: { id: string; price: string | null } }> };
-  };
-  variant: { id: string; price: string | null } | null;
+  product: CreatedProduct;
+  variant: UpdatedVariant | null;
 }
 
 export const generateProduct = createServerFn({ method: 'POST' })
@@ -93,13 +100,13 @@ export const generateProduct = createServerFn({ method: 'POST' })
       );
     }
 
-    const product = created?.product as GenerateProductResult['product'] | undefined;
+    const product = created?.product;
     if (!product) {
       throw new Error('productCreate returned no product');
     }
 
     const firstVariantId = product.variants.edges[0]?.node?.id;
-    let variant: GenerateProductResult['variant'] = null;
+    let variant: UpdatedVariant | null = null;
 
     if (firstVariantId) {
       const variantResponse = await context.admin.graphql(VARIANT_UPDATE_MUTATION, {
@@ -117,7 +124,7 @@ export const generateProduct = createServerFn({ method: 'POST' })
           )}`,
         );
       }
-      variant = (updated?.productVariants?.[0] as GenerateProductResult['variant']) ?? null;
+      variant = updated?.productVariants?.[0] ?? null;
     }
 
     return { product, variant };
