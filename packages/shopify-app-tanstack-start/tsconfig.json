@@ -1,0 +1,5 @@
+{
+  "//": "WS4 THROWAWAY — WS2 owns the real tsconfig.json for this package. The merge MUST take WS2's version and discard this file. It exists only so `tsc --noEmit` can typecheck src/webhooks/** standalone.",
+  "extends": "../../tsconfig.base.json",
+  "include": ["src"]
+}
