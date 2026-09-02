@@ -41,12 +41,16 @@ function AuthenticatedLayout() {
   // through TanStack Router so there is no iframe reload. This is the ported RR
   // `AppProvider` behaviour (ADR 0006 navigation). Do NOT put a router `<Link>`
   // inside the nav — its `aria-current` triggers an App Bridge warning.
+  //
+  // Use `navigate({ to })` and do NOT `preventDefault()` — the ENG-2335
+  // prototype verified this does a clean SPA transition with no iframe reload;
+  // `navigate({ href })` and/or `preventDefault()` here make every nav a slow
+  // full-document round-trip through the dev tunnel.
   useEffect(() => {
     const onNavigate = (event: Event) => {
       const href = (event.target as Element | null)?.getAttribute?.('href');
       if (href) {
-        event.preventDefault();
-        void navigate({ href });
+        void navigate({ to: href });
       }
     };
     document.addEventListener('shopify:navigate', onNavigate);

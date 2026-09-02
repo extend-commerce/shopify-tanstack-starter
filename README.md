@@ -47,6 +47,7 @@ shopify app dev      # runs apps/web's Vite directly, tunnels, injects env
 | `pnpm format` / `pnpm format:check`           | Prettier                                                                                       |
 | `pnpm db:up`                                  | Postgres container → migrate → seed                                                            |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle Kit migration workflow                                                                 |
+| `pnpm db:studio`                              | Drizzle Studio (browse the `session` table) at `https://local.drizzle.studio`                  |
 
 Production serve: `pnpm build` then `node apps/web/.output/server/index.mjs`.
 

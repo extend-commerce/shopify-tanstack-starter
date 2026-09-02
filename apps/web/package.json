@@ -15,6 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx app/db/seed.ts",
+    "db:studio": "drizzle-kit studio",
     "db:up": "docker compose -f ../../docker-compose.yml up -d --wait && pnpm db:migrate && pnpm db:seed"
   },
   "dependencies": {
