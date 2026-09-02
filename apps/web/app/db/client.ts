@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 // DEPLOYMENT PORTABILITY SWAP POINT (ADR 0009).
 //
 // `pg` (node-postgres) uses `node:net` / `node:tls` and is NOT Workers-compatible.
@@ -40,4 +44,4 @@ export const db = drizzle(pool, { schema });
 // not importable" while satisfying the call — the guarantee that the shape
 // matches is the verbatim copy + the committed migration, not this cast
 // (ADR 0005 Consequences: re-diff `schema.ts` on adapter bumps).
-export const sessionStorage = new DrizzleSessionStoragePostgres(db, schema.sessionTable as never);
+export const sessionStorage = new DrizzleSessionStoragePostgres(db, schema.sessionTable);

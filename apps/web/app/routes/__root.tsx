@@ -21,17 +21,30 @@ export const Route = createRootRouteWithContext<ShopifyRouterContext>()({
    *
    * Copy ONLY the two client-safe fields into router context, where they
    * dehydrate for the browser — `session` / `sessionToken` must NEVER cross
-   * (cross-cutting rule #4). `serverContext` is `undefined` on client
-   * navigations; the root `beforeLoad` result is dehydrated from SSR so the
-   * values persist. No auth *logic* here — the `_authenticated` layout owns the
-   * bounce.
+   * (cross-cutting rule #4). No auth *logic* here — the `_authenticated` layout
+   * owns the bounce.
+   *
+   * `serverContext` is absent when this re-runs on the CLIENT (a `router.invalidate()`
+   * after a mutation, or any nav that revalidates the root). The base router
+   * context still holds the SSR seed (`shop: ''`, `isAuthenticated: false`), so
+   * we must NOT fall back to it — that would drop `isAuthenticated` to `false`
+   * mid-session and bounce a working embedded app. Instead trust App Bridge:
+   * if `window.shopify` is initialised the frame is embedded and the fetch
+   * interceptor + `adminMiddleware` retry keep tokens fresh.
    */
   beforeLoad: ({ context, serverContext }) => {
     const ssr = (serverContext as { shopify?: ShopifyRequestContext } | undefined)?.shopify;
-    return {
-      shop: ssr?.shop ?? context.shop,
-      isAuthenticated: ssr?.isAuthenticated ?? context.isAuthenticated,
-    };
+    if (ssr) {
+      return { shop: ssr.shop ?? '', isAuthenticated: ssr.isAuthenticated };
+    }
+    const appBridge =
+      typeof window !== 'undefined'
+        ? (window as { shopify?: { config?: { shop?: string } } }).shopify
+        : undefined;
+    if (appBridge) {
+      return { shop: appBridge.config?.shop ?? context.shop, isAuthenticated: true };
+    }
+    return { shop: context.shop, isAuthenticated: context.isAuthenticated };
   },
   loader: () => ({
     // Public client ID. Server-only read of the CLI-injected var — there is no

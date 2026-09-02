@@ -1,4 +1,7 @@
 import { defineConfig } from 'drizzle-kit';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // drizzle-kit is the sole migration authority (ADR 0005): `pnpm db:generate`
 // writes committed SQL under ./app/db/migrations, `pnpm db:migrate` applies it.

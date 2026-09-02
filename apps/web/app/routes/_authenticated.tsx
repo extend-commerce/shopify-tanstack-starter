@@ -9,18 +9,26 @@ import { QueryClientProvider } from '@tanstack/react-query';
  */
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
-    if (!context.isAuthenticated) {
-      // Bounce to the App Bridge `session-token` reload (ADR 0002). `/auth/$`
-      // (a server route) renders the `shopify-reload` HTML that re-enters with a
-      // fresh token; `?shopify-reload=<path>` carries the return path. `href`
-      // (not `to`) because `/auth/*` is a server route, outside the client route
-      // tree, and the string must pass through verbatim.
-      throw redirect({
-        href: `/auth/session-token?shopify-reload=${encodeURIComponent(
-          location.pathname + location.searchStr,
-        )}`,
-      });
+    // On the CLIENT, App Bridge being initialised (`window.shopify`) means the
+    // frame is embedded and can mint fresh tokens — never bounce mid-session
+    // (that would tear down the subtree on every `router.invalidate()`). Only the
+    // SSR path, or a genuinely un-embedded client, reaches the bounce below.
+    if (typeof window !== 'undefined' && (window as { shopify?: unknown }).shopify) {
+      return;
     }
+    if (context.isAuthenticated) {
+      return;
+    }
+    // Bounce to the App Bridge `session-token` reload (ADR 0002). `/auth/$` (a
+    // server route) renders the `shopify-reload` HTML that re-enters with a fresh
+    // token. Preserve `host` / `shop` / `embedded` from the current URL (drop
+    // only `id_token`) so App Bridge on the bounce page can initialise — mirrors
+    // the package's `redirectToBouncePage`. `href` (not `to`) because `/auth/*`
+    // is a server route outside the client route tree.
+    const params = new URLSearchParams(location.searchStr);
+    params.delete('id_token');
+    params.set('shopify-reload', location.pathname + location.searchStr);
+    throw redirect({ href: `/auth/session-token?${params.toString()}` });
   },
   component: AuthenticatedLayout,
 });
