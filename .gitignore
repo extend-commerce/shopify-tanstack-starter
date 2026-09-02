@@ -1,0 +1,30 @@
+node_modules/
+**/.output/
+**/.nitro/
+**/dist/
+.turbo/
+
+# env files — keep the committed example
+.env
+.env.*
+!.env.example
+
+# generated route tree (regenerated on every dev/build and in predev) — ADR 0008
+**/routeTree.gen.ts
+
+# GraphQL codegen intermediate schema dump (ADR 0007). The committed
+# app/types/admin.{types,generated}.d.ts are what a fresh `pnpm i` needs; this
+# multi-MB introspection JSON is re-fetched by `pnpm --filter web graphql-codegen`.
+apps/web/app/types/*.schema.json
+
+# Shopify CLI local state
+.shopify/
+
+# Claude Code local state (agent worktrees, etc.)
+.claude/
+
+# local prototype workspace — reference only, lives on branch prototype/appbridge-polaris-ssr
+/prototype/
+
+.DS_Store
+*.log

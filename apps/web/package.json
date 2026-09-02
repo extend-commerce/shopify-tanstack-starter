@@ -1,0 +1,49 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "pnpm routes:generate && pnpm graphql-codegen && pnpm db:migrate",
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint app",
+    "format:check": "prettier --check app",
+    "routes:generate": "tsr generate",
+    "graphql-codegen": "graphql-codegen",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx app/db/seed.ts",
+    "db:up": "docker compose -f ../../docker-compose.yml up -d --wait && pnpm db:migrate && pnpm db:seed"
+  },
+  "dependencies": {
+    "@shopify/shopify-app-session-storage-drizzle": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "shopify-app-tanstack-start": "workspace:*"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "6.3.1",
+    "@shopify/api-codegen-preset": "catalog:",
+    "@tanstack/router-cli": "1.167.33",
+    "@tanstack/router-plugin": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "6.1.1",
+    "drizzle-kit": "catalog:",
+    "graphql": "16.14.2",
+    "graphql-config": "5.1.6",
+    "nitro": "3.0.260610-beta",
+    "tsx": "4.20.3",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

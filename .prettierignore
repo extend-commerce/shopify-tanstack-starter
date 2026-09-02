@@ -1,0 +1,12 @@
+**/routeTree.gen.ts
+apps/web/app/types/
+**/.output
+**/.nitro
+**/dist
+**/.turbo
+**/node_modules
+apps/web/app/db/migrations/**
+pnpm-lock.yaml
+
+# ADR / research prose + the synthesized build plan — decision records, kept verbatim
+docs/**

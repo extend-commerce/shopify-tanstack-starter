@@ -1,0 +1,40 @@
+# Shopify app configuration — resolved from the repo root by the Shopify CLI (ADR 0008).
+# Webhook subscriptions are declared here only; there is no `webhooks` config field
+# and no afterAuth registration (ADR 0004).
+
+client_id = "REPLACE_WITH_CLIENT_ID"
+application_url = "https://example.com"
+embedded = true
+name = "shopify-tanstack-starter"
+
+[access_scopes]
+# The productCreate / productVariantsBulkUpdate demo (ADR 0007).
+scopes = "write_products"
+
+[auth]
+# Minimal — token exchange + managed install does not use the OAuth callback (ADR 0002).
+redirect_urls = ["https://example.com/auth"]
+
+[webhooks]
+# keep in sync with apps/web/app/shopify.config.ts (API_VERSION)
+api_version = "2026-07"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app.uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app.scopes_update"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "/webhooks/compliance/customers-data-request"
+customer_deletion_url = "/webhooks/compliance/customers-redact"
+shop_deletion_url = "/webhooks/compliance/shop-redact"
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+# [access.admin] embedded_app_direct_api_access is intentionally omitted — the
+# starter does no client-side Admin GraphQL (ADR 0003 / ADR 0008).

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalEnv": ["NODE_ENV", "PORT", "HOST"],
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "SHOPIFY_API_KEY",
+    "SHOPIFY_API_SECRET",
+    "SHOPIFY_APP_URL",
+    "SCOPES"
+  ],
+  "tasks": {
+    "routes:generate": {
+      "outputs": ["app/routeTree.gen.ts"]
+    },
+    "graphql-codegen": {
+      "inputs": [".graphqlrc.ts", "app/**/*.{ts,tsx}"],
+      "outputs": ["app/types/admin.generated.d.ts", "app/types/admin.types.d.ts"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build", "routes:generate", "graphql-codegen"],
+      "outputs": [".output/**", ".nitro/**", "dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["routes:generate", "graphql-codegen"]
+    },
+    "lint": {},
+    "format:check": {},
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    }
+  }
+}
