@@ -1,0 +1,11 @@
+{
+  "//": "MINIMAL WS1 tsconfig so app/db/** typechecks. WS5 (ADR 0008) owns and expands this (TanStack Start plugin types, vite config, srcDirectory, etc.).",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./app/*"]
+    }
+  },
+  "include": ["app", "drizzle.config.ts"]
+}

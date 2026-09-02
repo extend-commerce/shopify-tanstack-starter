@@ -2,8 +2,21 @@
   "name": "web",
   "private": true,
   "type": "module",
-  "//": "WS0 stub. WS5 owns the real scripts (dev/build/predev), vite.config.ts, and app deps; WS1 owns the db:* scripts. See docs/BUILD-PLAN.md.",
-  "scripts": {},
-  "dependencies": {},
-  "devDependencies": {}
+  "//": "WS0 stub. WS5 owns the real scripts (dev/build/predev), vite.config.ts, and app deps. WS1 owns the db:* scripts and the data-layer deps. See docs/BUILD-PLAN.md.",
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx app/db/seed.ts",
+    "db:up": "docker compose -f ../../docker-compose.yml up -d --wait && pnpm db:migrate && pnpm db:seed"
+  },
+  "dependencies": {
+    "@shopify/shopify-app-session-storage-drizzle": "catalog:",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
+    "tsx": "4.20.3"
+  }
 }
