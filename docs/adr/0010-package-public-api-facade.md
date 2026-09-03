@@ -273,14 +273,38 @@ bounce string `/auth/session-token` legitimately ships client-side because the
 guard runs on client navigation). No dedicated client-safe `/guards` subpath was
 needed; `.` stays the single import site.
 
-### 2 — `admin.graphql` `.json()` payload is `ClientResponse`, not `FetchResponseBody`
+### 2 — `admin.graphql` `.json()` payload is `ClientResponse`, not `FetchResponseBody` (deviation #2)
 
 RR's `GraphQLResponse` types `.json()` as `FetchResponseBody<ReturnData<…>>`
 (`{ data?, extensions?, headers? }` — no `errors`). The starter's
 `generate-product.ts` demo checks transport-level `errors` (RR's own template
-does not), and the package already wraps `api.clients.Graphql`'s parsed
-`{ data, errors, extensions }` into the `Response` body at runtime. So the
-package types `.json()` as `ClientResponse<ReturnData<…>>` — a strict superset of
-`FetchResponseBody` that also types `errors` — letting a server fn unwrap
-`const { data, errors } = await res.json()` with **zero casts** (the handoff's
-mandated pattern). `.data` typing is unchanged.
+does not). So the package types `.json()` as `ClientResponse<ReturnData<…>>` — a
+strict superset of `FetchResponseBody` that also types the optional `errors` —
+letting a server fn unwrap `const { data, errors } = await res.json()` with
+**zero casts** (the handoff's mandated pattern). `.data` typing is unchanged.
+`FetchResponseBody` structurally satisfies `ClientResponse`, so widening
+`client.fetch`'s return to `GraphQLResponse` is the single internal cast
+`createAdminApiContext` makes.
+
+### 2 — `admin.graphql` is a true `createAdminApiClient().fetch` passthrough (deviation #3, **resolved**)
+
+The Phase 1 build resolved the `Response` by calling `api.clients.Graphql`'s
+`.request(...)` (which parses the body) and re-wrapping it in
+`new Response(JSON.stringify(parsed))`. `.status` and `extensions.cost` survived
+that, but the **real upstream headers did not** — `Retry-After`, rate-limit, and
+`X-Shopify-API-Deprecated-Reason` (the headers §2's rationale named) were gone.
+
+`createAdminApiContext(session, apiVersion)` now builds
+`createAdminApiClient({ accessToken, storeDomain, apiVersion })` and returns
+`client.fetch(operation, { variables, apiVersion, headers, retries, signal })`
+**directly** — the same `@shopify/admin-api-client` call
+`@shopify/shopify-app-react-router` v2's `admin.graphql` uses. The result is a
+genuine `fetch` `Response`: real headers, real status, `.json()` typed by the
+library. `.fetch()` does not throw on an HTTP error status, so an upstream `401`
+comes back as a resolved `Response` — the `authenticateAdmin` 401-retry wrapper
+still keys on `res.status === 401` (its old `HttpResponseError` branch is gone,
+not just dead). `@shopify/admin-api-client` calls the global `fetch`, so the
+package stays runtime-agnostic. The `api: Shopify` parameter Phase 1 added to
+`createAdminApiContext` is dropped; the signature is back to `(session,
+apiVersion)`. Deviation #2 (`.json()` typed `ClientResponse` for `errors`) is
+unchanged.

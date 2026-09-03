@@ -138,7 +138,7 @@ export async function authenticateAdmin(
     });
   }
 
-  const base = createAdminApiContext(api, session, config.apiVersion);
+  const base = createAdminApiContext(session, config.apiVersion);
   const admin: AdminApiContext = {
     // Wrap `.graphql` so an Admin API 401 (now surfaced as `res.status === 401`,
     // ADR 0010 2) invalidates the token and throws the retry response instead of

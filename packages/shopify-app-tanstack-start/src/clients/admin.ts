@@ -1,13 +1,13 @@
-import type {
-  AllOperations,
-  AdminOperations,
-  ApiClientRequestOptions,
-  ClientResponse,
-  ResponseWithType,
-  ReturnData,
+import {
+  createAdminApiClient,
+  type AllOperations,
+  type AdminOperations,
+  type ApiClientRequestOptions,
+  type ClientResponse,
+  type ResponseWithType,
+  type ReturnData,
 } from '@shopify/admin-api-client';
-import type { ApiVersion, Session, Shopify } from '@shopify/shopify-api';
-import { HttpResponseError } from '@shopify/shopify-api';
+import type { ApiVersion, Session } from '@shopify/shopify-api';
 
 /**
  * The Admin GraphQL capability (ADR 0003 1 / ADR 0010 2 / IP-4 / IP-5).
@@ -15,16 +15,19 @@ import { HttpResponseError } from '@shopify/shopify-api';
  * `admin.graphql(query, { variables, apiVersion?, headers?, tries?, signal? })`
  * resolves a **Fetch `Response`** — RR-exact (`@shopify/shopify-app-react-router`
  * v2). ADR 0010 2 reverses ADR 0003's parsed-return decision: the `Response`
- * exposes `.status`, rate-limit / cost headers (`extensions.cost`, `Retry-After`),
- * and deprecation warnings that the parsed `{ data, errors, extensions }` shape
- * hid. A server function unwraps explicitly:
+ * exposes `.status`, the real upstream headers (`Retry-After`, rate-limit,
+ * `X-Shopify-API-Deprecated-Reason`), and `extensions.cost` — all of which the
+ * parsed `{ data, errors, extensions }` shape hid. A server function unwraps
+ * explicitly:
  *
  *   const res = await admin.graphql(QUERY, { variables });
  *   const { data } = await res.json();
  *
- * Built on `new api.clients.Graphql({ session, apiVersion })` (RR's client), NOT
- * `@shopify/admin-api-client`'s `createAdminApiClient` — that package stays a
- * dependency for `AdminOperations` typing only (ADR 0010 Consequences).
+ * Built on `@shopify/admin-api-client`'s `createAdminApiClient(...).fetch` (the
+ * same client `@shopify/shopify-app-react-router` v2's `admin.graphql` uses) — a
+ * genuine `fetch` `Response` with genuine headers, `.json()` typed by the
+ * library. `.fetch()` does **not** throw on an HTTP error status: an upstream
+ * `401` / `429` / `5xx` comes back as a resolved `Response` carrying that status.
  *
  * The client's operation typing carries `AdminOperations`, which the app's
  * generated `app/types/admin.generated.d.ts` (WS7 / IP-5) module-augments — that
@@ -54,10 +57,12 @@ export interface GraphQLQueryOptions<
  * `res.headers` are available.
  *
  * The `.json()` payload is `ClientResponse<…>` (`{ data?, errors?, extensions? }`)
- * — a superset of RR's `FetchResponseBody<…>` that also types the transport-level
- * `errors` array the wrapped `api.clients.Graphql` request already puts in the
- * body. A server fn unwraps `const { data, errors } = await res.json()` with no
- * cast (ADR 0010 2).
+ * — a superset of the library's `FetchResponseBody<…>` that also types a
+ * transport-level `errors` array, so the starter's `generate-product.ts` demo can
+ * unwrap `const { data, errors } = await res.json()` with no cast (ADR 0010 2,
+ * deviation #2). `FetchResponseBody` structurally satisfies `ClientResponse`
+ * (`errors` is optional), so widening `client.fetch`'s return to this is the one
+ * internal cast `createAdminApiContext` makes.
  */
 export type GraphQLResponse<
   Operation extends keyof Operations,
@@ -81,55 +86,33 @@ export interface AdminApiContext {
   graphql: GraphQLClient<AdminOperations>;
 }
 
-export function createAdminApiContext(
-  api: Shopify,
-  session: Session,
-  apiVersion: string,
-): AdminApiContext {
+export function createAdminApiContext(session: Session, apiVersion: string): AdminApiContext {
   if (!session.accessToken) {
     throw new Error(
       'shopify-app-tanstack-start: createAdminApiContext called with a session that has no accessToken',
     );
   }
 
-  const graphql = (async (
-    operation: string,
-    options: GraphQLQueryOptions<string, AllOperations> = {},
-  ) => {
-    const client = new api.clients.Graphql({
-      session,
-      apiVersion: (options.apiVersion ?? apiVersion) as ApiVersion,
-    });
+  const client = createAdminApiClient({
+    accessToken: session.accessToken,
+    storeDomain: session.shop,
+    apiVersion,
+  });
 
-    try {
-      // `client.request` resolves the parsed `{ data, errors, extensions }`; we
-      // wrap it back into a `Response` to match RR's `admin.graphql` shape.
-      const apiResponse = await client.request(operation, {
-        variables: options.variables as never,
-        retries: options.tries ? options.tries - 1 : 0,
-        headers: options.headers,
-        signal: options.signal,
-      });
-
-      return new Response(JSON.stringify(apiResponse), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    } catch (error) {
-      // An HTTP-level failure (401 invalid token, 429 throttle, 5xx) is a thrown
-      // `HttpResponseError` in `@shopify/shopify-api`. Surface it as a `Response`
-      // with the upstream status so the 401-retry wrapper (ADR 0010 1) can act on
-      // `res.status === 401` instead of sniffing an error shape.
-      if (error instanceof HttpResponseError) {
-        return new Response(JSON.stringify(error.response.body ?? {}), {
-          status: error.response.code,
-          statusText: error.response.statusText,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-      throw error;
-    }
-  }) as GraphQLClient<AdminOperations>;
+  // `client.fetch` returns the genuine `fetch` `Response` (real headers, typed
+  // `.json()`); it never throws on an HTTP error status. The one cast widens the
+  // library's `FetchResponseBody`-typed `.json()` to `ClientResponse` (adds the
+  // optional `errors`, ADR 0010 2 deviation #2).
+  const graphql = ((operation: string, options: GraphQLQueryOptions<string, AllOperations> = {}) =>
+    client.fetch(operation, {
+      variables: options.variables as never,
+      apiVersion: options.apiVersion ?? apiVersion,
+      // `GraphQLQueryOptions` allows numeric header values (RR parity); the
+      // client's `HeadersObject` is `string | string[]` and stringifies them.
+      headers: options.headers as Record<string, string> | undefined,
+      retries: options.tries ? options.tries - 1 : 0,
+      signal: options.signal,
+    })) as GraphQLClient<AdminOperations>;
 
   return { graphql };
 }

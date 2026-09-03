@@ -61,7 +61,7 @@ export function createUnauthenticated(internals: ShopifyAppInternals): Unauthent
     ensureValidOfflineSession,
     admin: async (shop: string) => {
       const session = await ensureValidOfflineSession(shop);
-      return { session, admin: createAdminApiContext(api, session, config.apiVersion) };
+      return { session, admin: createAdminApiContext(session, config.apiVersion) };
     },
     storefront: async (shop: string) => {
       const session = await ensureValidOfflineSession(shop);

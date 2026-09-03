@@ -88,7 +88,7 @@ export async function ensureAuthenticatedOfflineSession(
       if (config.hooks?.afterAuth) {
         await config.hooks.afterAuth({
           session,
-          admin: createAdminApiContext(api, session, config.apiVersion),
+          admin: createAdminApiContext(session, config.apiVersion),
         });
       }
     });

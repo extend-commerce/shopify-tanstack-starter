@@ -322,7 +322,7 @@ export function createAuthenticate({ internals, unauthenticated }: AuthenticateD
           return {
             liquid,
             session,
-            admin: createAdminApiContext(api, session, config.apiVersion),
+            admin: createAdminApiContext(session, config.apiVersion),
             storefront: createStorefrontApiContext(api, session, config.apiVersion),
           };
         } catch {
