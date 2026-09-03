@@ -4,7 +4,7 @@ import { defineConfig } from 'drizzle-kit';
 
 // `drizzle-kit` is a standalone CLI (not run through Vite), so it loads the
 // monorepo-root `.env` itself. dotenv never overrides an already-set var.
-loadEnv({ path: resolve(import.meta.dirname, '../../.env') });
+loadEnv({ path: resolve(__dirname, '../../.env') });
 
 // drizzle-kit is the sole migration authority (ADR 0005): `pnpm db:generate`
 // writes committed SQL under ./app/db/migrations, `pnpm db:migrate` applies it.
