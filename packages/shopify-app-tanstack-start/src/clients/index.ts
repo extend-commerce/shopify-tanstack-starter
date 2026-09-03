@@ -5,7 +5,13 @@
  * client-safe router-context type is re-exported here too so a consumer can pull
  * everything context-related from one path.
  */
-export { createAdminApiContext, type AdminApiContext } from './admin';
+export {
+  createAdminApiContext,
+  type AdminApiContext,
+  type GraphQLClient,
+  type GraphQLQueryOptions,
+  type GraphQLResponse,
+} from './admin';
 export {
   createStorefrontApiContext,
   type StorefrontApiContext,

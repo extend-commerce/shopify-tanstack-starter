@@ -32,8 +32,9 @@ export interface BillingApiContext {
 }
 
 /**
- * IP-4 — the `adminMiddleware` server-fn context. Server-only; attached to every
- * `createServerFn` that touches the Admin API. `billing` is reserved.
+ * IP-4 — the Admin server-fn context. Built by `authenticate.admin(request)`
+ * (ADR 0010 1, the single implementation) and spread verbatim into
+ * `adminMiddleware`'s `next({ context })`. Server-only; `billing` is reserved.
  */
 export interface AdminMiddlewareContext {
   admin: AdminApiContext;
@@ -83,93 +84,95 @@ function createScopesContext(
   };
 }
 
-function isAdminUnauthorized(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const candidate = error as {
-    status?: number;
-    statusCode?: number;
-    response?: { status?: number };
+/**
+ * `authenticate.admin(request)` (ADR 0010 1) — the **single implementation** of
+ * the Admin data boundary (ADR 0002 layer 2). Independently re-validates the
+ * request's `Bearer` (App Bridge's fetch interceptor puts it on server-fn RPC
+ * too — prototype finding 6), reloads / ensures an active offline session, and
+ * builds the `admin` client. On an Admin API `401` the wrapped `.graphql` (which
+ * now resolves a `Response`, ADR 0010 2) invalidates the stored token and throws
+ * the retry response (`401` + `X-Shopify-Retry-Invalid-Session-Request: 1`) so
+ * App Bridge retries.
+ *
+ * Callable server-side only, with an explicit `Request`. `adminMiddleware` is a
+ * thin adapter over this (no parallel code path).
+ */
+export async function authenticateAdmin(
+  internals: ShopifyAppInternals,
+  request: Request,
+): Promise<AdminMiddlewareContext> {
+  const { api, sessionStorage, config } = internals;
+  const url = new URL(request.url);
+
+  const token = getSessionTokenFromRequest(request, url);
+  if (!token) {
+    throw respondToInvalidSessionToken({
+      request,
+      retry: true,
+      bouncePath: config.auth.patchSessionTokenPath,
+    });
+  }
+
+  let session: Session;
+  try {
+    const decoded = await api.session.decodeSessionToken(token);
+    const shop = new URL(decoded.dest).hostname;
+    session = await ensureAuthenticatedOfflineSession(internals, {
+      sessionToken: token,
+      decoded,
+      shop,
+    });
+  } catch {
+    throw respondToInvalidSessionToken({
+      request,
+      retry: true,
+      bouncePath: config.auth.patchSessionTokenPath,
+    });
+  }
+
+  if (!session.accessToken) {
+    throw respondToInvalidSessionToken({
+      request,
+      retry: true,
+      bouncePath: config.auth.patchSessionTokenPath,
+    });
+  }
+
+  const base = createAdminApiContext(api, session, config.apiVersion);
+  const admin: AdminApiContext = {
+    // Wrap `.graphql` so an Admin API 401 (now surfaced as `res.status === 401`,
+    // ADR 0010 2) invalidates the token and throws the retry response instead of
+    // handing back the raw 401 `Response`.
+    graphql: (async (...args: Parameters<AdminApiContext['graphql']>) => {
+      const res = await base.graphql(...args);
+      if (res.status === 401) {
+        session.accessToken = undefined;
+        await sessionStorage.storeSession(session);
+        throw respondToInvalidSessionToken({
+          request,
+          retry: true,
+          bouncePath: config.auth.patchSessionTokenPath,
+        });
+      }
+      return res;
+    }) as AdminApiContext['graphql'],
   };
-  return (
-    candidate.status === 401 || candidate.statusCode === 401 || candidate.response?.status === 401
-  );
+
+  return {
+    admin,
+    session,
+    scopes: createScopesContext(internals, session, request),
+    billing: createBillingContext(),
+  };
 }
 
 /**
- * IP-4 — function middleware for Admin-touching `createServerFn`s (ADR 0002
- * layer 2). Independently re-validates the request's `Bearer` (App Bridge's
- * fetch interceptor puts it on server-fn RPC too — prototype finding 6), reloads
- * / ensures an active offline session, builds the `admin` client, and on an
- * Admin API `401` invalidates the stored token and returns the retry response
- * (`401` + `X-Shopify-Retry-Invalid-Session-Request: 1`) so App Bridge retries.
+ * IP-4 — function middleware for Admin-touching `createServerFn`s. A **thin
+ * adapter** over `authenticate.admin(request)` (ADR 0010 1): it resolves the
+ * per-request `Request` and spreads the context into `next`.
  */
 export function createAdminMiddleware(internals: ShopifyAppInternals) {
-  const { api, sessionStorage, config } = internals;
-
-  return createMiddleware({ type: 'function' }).server(async ({ next }) => {
-    const request = getRequest();
-    const url = new URL(request.url);
-
-    const token = getSessionTokenFromRequest(request, url);
-    if (!token) {
-      throw respondToInvalidSessionToken({
-        request,
-        retry: true,
-        bouncePath: config.auth.patchSessionTokenPath,
-      });
-    }
-
-    let session: Session;
-    try {
-      const decoded = await api.session.decodeSessionToken(token);
-      const shop = new URL(decoded.dest).hostname;
-      session = await ensureAuthenticatedOfflineSession(internals, {
-        sessionToken: token,
-        decoded,
-        shop,
-      });
-    } catch {
-      throw respondToInvalidSessionToken({
-        request,
-        retry: true,
-        bouncePath: config.auth.patchSessionTokenPath,
-      });
-    }
-
-    if (!session.accessToken) {
-      throw respondToInvalidSessionToken({
-        request,
-        retry: true,
-        bouncePath: config.auth.patchSessionTokenPath,
-      });
-    }
-
-    const base = createAdminApiContext(session, config.apiVersion);
-    const admin: AdminApiContext = {
-      // Wrap `.graphql` so an Admin API 401 invalidates the token and surfaces the
-      // retry response instead of a raw error.
-      graphql: ((...args: Parameters<AdminApiContext['graphql']>) =>
-        base.graphql(...args).catch(async (error: unknown) => {
-          if (isAdminUnauthorized(error)) {
-            session.accessToken = undefined;
-            await sessionStorage.storeSession(session);
-            throw respondToInvalidSessionToken({
-              request,
-              retry: true,
-              bouncePath: config.auth.patchSessionTokenPath,
-            });
-          }
-          throw error;
-        })) as AdminApiContext['graphql'],
-    };
-
-    return next({
-      context: {
-        admin,
-        session,
-        scopes: createScopesContext(internals, session, request),
-        billing: createBillingContext(),
-      } satisfies AdminMiddlewareContext,
-    });
-  });
+  return createMiddleware({ type: 'function' }).server(async ({ next }) =>
+    next({ context: await authenticateAdmin(internals, getRequest()) }),
+  );
 }

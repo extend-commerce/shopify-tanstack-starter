@@ -17,9 +17,10 @@ export type { ShopifyGlobal } from './shopify-elements';
 /**
  * Returns the App Bridge global, or `undefined` during SSR and before
  * `app-bridge.js` has initialised. Saves every call site re-writing the
- * `typeof window` guard.
+ * `typeof window` guard. `window.shopify` is typed by the ambient
+ * `./shopify-elements` declaration (ADR 0010 5) — no cast.
  */
 export function useShopify(): ShopifyGlobal | undefined {
   if (typeof window === 'undefined') return undefined;
-  return (window as unknown as { shopify?: ShopifyGlobal }).shopify;
+  return window.shopify;
 }

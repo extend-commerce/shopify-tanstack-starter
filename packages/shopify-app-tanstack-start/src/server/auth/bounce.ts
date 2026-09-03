@@ -60,12 +60,33 @@ export function renderAppBridge(
 }
 
 /**
+ * The shared bounce move (ADR 0002 3.4, RR parity): strip `id_token`, set
+ * `shopify-reload=<pathname><search>`, `throw redirect()` to the App Bridge
+ * `session-token` reload route.
+ *
+ * Config-less so it is reusable from an isomorphic `beforeLoad` (the package's
+ * `authGuard`, ADR 0010 4) as well as the server-side `redirectToBouncePage`.
+ */
+export function bounceToSessionToken(args: {
+  pathname: string;
+  search: string;
+  patchSessionTokenPath?: string;
+}): never {
+  const { pathname, search, patchSessionTokenPath = '/auth/session-token' } = args;
+  const params = new URLSearchParams(search);
+  params.delete('id_token');
+  params.set('shopify-reload', `${pathname}${search}`);
+  throw redirect({ href: `${patchSessionTokenPath}?${params.toString()}` });
+}
+
+/**
  * `redirectToBouncePage` (ADR 0002 3.4, RR parity): strip `id_token`, set
  * `shopify-reload=<path>?<params>`, `throw redirect()` to the bounce route.
  */
 export function redirectToBouncePage(config: DerivedConfig, url: URL): never {
-  const params = new URLSearchParams(url.search);
-  params.delete('id_token');
-  params.set('shopify-reload', `${url.pathname}${url.search}`);
-  throw redirect({ href: `${config.auth.patchSessionTokenPath}?${params.toString()}` });
+  bounceToSessionToken({
+    pathname: url.pathname,
+    search: url.search,
+    patchSessionTokenPath: config.auth.patchSessionTokenPath,
+  });
 }

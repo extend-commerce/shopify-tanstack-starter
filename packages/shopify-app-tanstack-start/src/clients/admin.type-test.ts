@@ -1,6 +1,7 @@
 /**
- * Type-level test (ADR 0003 / WS3 done-when): `admin.graphql()` resolves the
- * PARSED shape `{ data, errors, extensions }`, NOT a Fetch `Response`.
+ * Type-level test (ADR 0010 2 / ENG-2360 done-when): `admin.graphql()` resolves a
+ * Fetch `Response` — RR-exact — NOT the parsed `{ data, errors, extensions }`
+ * shape ADR 0003 originally specified.
  *
  * No runtime behaviour — this file fails `tsc` if the contract regresses.
  */
@@ -10,10 +11,10 @@ type Expect<T extends true> = T;
 
 type GraphqlResult = Awaited<ReturnType<AdminApiContext['graphql']>>;
 
-// The result exposes `data` — it is the parsed body.
-type ResultHasData = GraphqlResult extends { data?: unknown } ? true : false;
-// The result is NOT a Fetch Response.
-type ResultIsNotResponse = GraphqlResult extends Response ? false : true;
+// The result IS a Fetch Response (inverts the pre-ADR-0010 assertion).
+type ResultIsResponse = GraphqlResult extends Response ? true : false;
+// `.json()` is still present (typed against the operation's return data).
+type ResultHasJson = GraphqlResult extends { json: (...args: never[]) => unknown } ? true : false;
 
-export type AssertGraphqlResultHasData = Expect<ResultHasData>;
-export type AssertGraphqlResultIsNotResponse = Expect<ResultIsNotResponse>;
+export type AssertGraphqlResultIsResponse = Expect<ResultIsResponse>;
+export type AssertGraphqlResultHasJson = Expect<ResultHasJson>;

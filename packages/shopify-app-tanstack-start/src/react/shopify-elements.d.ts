@@ -39,7 +39,8 @@ declare module 'react' {
 /**
  * The App Bridge global (`window.shopify`). Minimal shape covering the surface the
  * starter shell touches; `[key: string]` keeps it open. A consumer wanting the
- * full type installs `@shopify/app-bridge-types`.
+ * full type installs `@shopify/app-bridge-types` (not resolvable here, so this
+ * local interface is the shipped fallback — ADR 0010 5).
  */
 export interface ShopifyGlobal {
   config: { apiKey?: string; shop?: string; host?: string; locale?: string };
@@ -50,4 +51,16 @@ export interface ShopifyGlobal {
   };
   loading: (isLoading: boolean) => void;
   [key: string]: unknown;
+}
+
+/**
+ * IP-10 / ADR 0010 5 — the shipped ambient `window.shopify` type. Pulled into a
+ * consumer's program by importing anything from `shopify-app-tanstack-start/react`
+ * (same mechanism as the `<s-*>` JSX shim above), so app code touches
+ * `window.shopify` with **zero `as` casts**.
+ */
+declare global {
+  interface Window {
+    shopify?: ShopifyGlobal;
+  }
 }

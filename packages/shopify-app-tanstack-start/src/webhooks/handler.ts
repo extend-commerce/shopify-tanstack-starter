@@ -1,11 +1,17 @@
 /**
- * WS4 — Webhook handler factory (ADR 0004 "Webhook handling").
+ * WS4 — Webhook primitive + handler-factory sugar (ADR 0004 + ADR 0010 6).
  *
  * Webhooks arrive as TanStack Start *server routes* under `webhookPath` (default
  * `/webhooks`) — never `createServerFn` (BUILD-PLAN 6 rule 6: outside callers
- * post HMAC bodies, server fns are same-origin RPC with auto-CSRF). This module
- * builds the polymorphic `shopify.handlers.webhooks(...)` factory a route file
- * wires into whatever the current TanStack Start server-route API is.
+ * post HMAC bodies, server fns are same-origin RPC with auto-CSRF).
+ *
+ * ADR 0010 6 splits this into:
+ *   - `authenticateWebhook(request)` — the **primitive**: validate → parse →
+ *     load session. Throws the RR-exact failure `Response` (`400/401/405`) on
+ *     bad method / HMAC / headers / body. Returned by `shopify.authenticate.webhook`.
+ *   - `bindWebhookHandlers` / `handlers.webhooks` / `createWebhookHandler` — the
+ *     **sugar**: the polymorphic "one route file, dispatch by topic" factory,
+ *     reimplemented on top of the primitive.
  *
  * Runtime-agnostic (ADR 0009): Web `Request`/`Response` only; HMAC is
  * `api.webhooks.validate` (never a hand-rolled `node:crypto` HMAC); no `node:*`.
@@ -74,7 +80,7 @@ export type WebhookFactory = (
   options?: WebhookRouteOptions,
 ) => WebhookRoute;
 
-/** Dependencies `createShopifyApp` pre-binds into the factory (the IP-3 seam). */
+/** Dependencies `createShopifyApp` pre-binds into the primitive + factory (the IP-3 seam). */
 export interface WebhookDeps {
   /** The `@shopify/shopify-api` instance built inside `createShopifyApp`. */
   api: Shopify;
@@ -84,50 +90,111 @@ export interface WebhookDeps {
   logger?: WebhookLogger;
 }
 
+/** `authenticate.webhook(request)` (ADR 0010 6). */
+export type AuthenticateWebhook = (request: Request) => Promise<WebhookContext>;
+
+function resolveLogger(deps: WebhookDeps): WebhookLogger {
+  const { api } = deps;
+  return (
+    deps.logger ?? {
+      warning: (message) => api.logger?.warning?.(message),
+      error: (message) => api.logger?.error?.(message),
+    }
+  );
+}
+
 /**
- * Pre-bind the webhook factory against `createShopifyApp`'s dependencies.
+ * The webhook **primitive** (ADR 0010 6): validate → parse → load session.
+ *
+ * Throws the RR-exact failure `Response` (`405` non-POST · `401` bad HMAC ·
+ * `400` unreadable body / `validate` threw / other invalid / unparseable JSON).
+ * On success resolves `{ shop, topic, webhookId, apiVersion, payload, session? }`
+ * — `session` is `undefined` when the app is already uninstalled.
+ */
+export function createAuthenticateWebhook(deps: WebhookDeps): AuthenticateWebhook {
+  const { api, ensureValidOfflineSession } = deps;
+  const logger = resolveLogger(deps);
+
+  return async function authenticateWebhook(request: Request): Promise<WebhookContext> {
+    if (request.method !== 'POST') {
+      throw textResponse(405, 'Method Not Allowed', { allow: 'POST' });
+    }
+
+    let rawBody: string;
+    try {
+      rawBody = await request.text();
+    } catch {
+      throw textResponse(400, 'Bad Request');
+    }
+
+    let validation;
+    try {
+      validation = await api.webhooks.validate({ rawBody, rawRequest: request });
+    } catch {
+      throw textResponse(400, 'Bad Request');
+    }
+
+    if (!validation.valid) {
+      throw validation.reason === 'invalid_hmac'
+        ? textResponse(401, 'Unauthorized')
+        : textResponse(400, 'Bad Request');
+    }
+
+    const { topic, webhookId, apiVersion, domain: shop } = validation;
+
+    let payload: unknown;
+    try {
+      payload = rawBody.length > 0 ? JSON.parse(rawBody) : {};
+    } catch {
+      throw textResponse(400, 'Bad Request');
+    }
+
+    let session: Session | undefined;
+    if (ensureValidOfflineSession) {
+      try {
+        session = await ensureValidOfflineSession(shop);
+      } catch (error) {
+        // App already uninstalled / no offline session on file (ADR 0004:
+        // `session` may be `undefined`). The caller still runs; one that needs a
+        // session throws → 500 → Shopify retries.
+        session = undefined;
+        await logger.warning?.(
+          `[webhooks] no offline session for ${shop} (topic=${topic}): ${errText(error)}`,
+        );
+      }
+    }
+
+    return { shop, topic, webhookId, apiVersion, payload, session };
+  };
+}
+
+/**
+ * Pre-bind the webhook factory against `createShopifyApp`'s dependencies —
+ * **sugar over `createAuthenticateWebhook`** (ADR 0010 6).
  *
  * `createShopifyApp` calls this once and assigns the result to
  * `handlers.webhooks` on its return object (IP-3), e.g.
  * `bindWebhookHandlers({ api, ensureValidOfflineSession, logger })`.
  */
 export function bindWebhookHandlers(deps: WebhookDeps): WebhookFactory {
-  const { api, ensureValidOfflineSession } = deps;
-  const logger: WebhookLogger = deps.logger ?? {
-    warning: (message) => api.logger?.warning?.(message),
-    error: (message) => api.logger?.error?.(message),
-  };
+  const authenticateWebhook = createAuthenticateWebhook(deps);
+  const logger = resolveLogger(deps);
 
   return (handlerOrMap, options) => {
     const single = isWebhookHandler(handlerOrMap) ? handlerOrMap : undefined;
     const map = single ? undefined : (handlerOrMap as WebhookHandlerMap);
 
     return async ({ request }) => {
-      if (request.method !== 'POST') {
-        return textResponse(405, 'Method Not Allowed', { allow: 'POST' });
-      }
-
-      let rawBody: string;
+      let ctx: WebhookContext;
       try {
-        rawBody = await request.text();
-      } catch {
-        return textResponse(400, 'Bad Request');
+        ctx = await authenticateWebhook(request);
+      } catch (error) {
+        // The primitive throws the `400/401/405` failure `Response`s directly.
+        if (error instanceof Response) return error;
+        throw error;
       }
 
-      let validation;
-      try {
-        validation = await api.webhooks.validate({ rawBody, rawRequest: request });
-      } catch {
-        return textResponse(400, 'Bad Request');
-      }
-
-      if (!validation.valid) {
-        return validation.reason === 'invalid_hmac'
-          ? textResponse(401, 'Unauthorized')
-          : textResponse(400, 'Bad Request');
-      }
-
-      const { topic, webhookId, apiVersion, domain: shop } = validation;
+      const { topic, webhookId, shop } = ctx;
 
       // Single-handler mode: optional topic guard → 400 on mismatch.
       if (single && options?.expectedTopic && !topicsMatch(topic, options.expectedTopic)) {
@@ -147,32 +214,10 @@ export function bindWebhookHandlers(deps: WebhookDeps): WebhookFactory {
         }
       }
 
-      let payload: unknown;
-      try {
-        payload = rawBody.length > 0 ? JSON.parse(rawBody) : {};
-      } catch {
-        return textResponse(400, 'Bad Request');
-      }
-
-      let session: Session | undefined;
-      if (ensureValidOfflineSession) {
-        try {
-          session = await ensureValidOfflineSession(shop);
-        } catch (error) {
-          // App already uninstalled / no offline session on file (ADR 0004:
-          // `session` may be `undefined`). The handler still runs; one that
-          // needs a session throws → 500 → Shopify retries.
-          session = undefined;
-          await logger.warning?.(
-            `[webhooks] no offline session for ${shop} (topic=${topic}): ${errText(error)}`,
-          );
-        }
-      }
-
       try {
         // `handler` is defined here: single-mode always, map-mode returned early
         // above when the lookup missed.
-        await handler!({ shop, topic, webhookId, apiVersion, payload, session });
+        await handler!(ctx);
       } catch (error) {
         await logger.error?.(
           `[webhooks] handler for "${topic}" (shop=${shop}, webhookId=${webhookId}) threw: ${errText(error)}`,

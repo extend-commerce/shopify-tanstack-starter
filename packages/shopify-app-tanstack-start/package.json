@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/server/index.ts",
     "./react": "./src/react/index.ts",
+    "./middleware": "./src/middleware/index.ts",
     "./webhooks": "./src/webhooks/index.ts",
     "./clients": "./src/clients/index.ts",
     "./adapters/node": "./src/adapters/node.ts",

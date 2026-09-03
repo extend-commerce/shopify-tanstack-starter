@@ -205,3 +205,45 @@ Adds `/middleware` (client-safe). `.` / `/react` / `/webhooks` / `/clients` /
   though `api.clients.Graphql` replaces it at runtime.
 - `authenticate.public.customerAccount` remains the session-token / CORS helper only —
   no Customer Account GraphQL client (ADR 0003 out-of-scope item unchanged).
+
+## Implementation notes
+
+Recorded during the package-side build (ENG-2360). These are execution details,
+not new decisions.
+
+### 5 — the TanStack Start server-context augmentation was **not** done; `hydrateRouterContext` is the typed accessor
+
+ADR 0010 5 hoped to `declare module`-augment TanStack Start's server context so
+`serverContext.shopify` types itself in a `beforeLoad`. At the pinned versions
+(`@tanstack/react-start@1.168.49`, `@tanstack/react-router@1.170.32` →
+`@tanstack/router-core@1.171.27`) there is **no clean augmentation target**:
+`serverContext` is not a member of `BeforeLoadContextOptions` (nor of
+`LoaderFnContext`) — the app reaches it today only via a positional cast
+(`serverContext as { shopify?: ShopifyRequestContext }`). `router-core` exposes no
+`Register['server']['beforeLoadContext']`-style hook to extend, and the
+`Register['server']['requestContext']` slot that *does* exist types the argument to
+`handler.fetch(request, { context })`, not the `beforeLoad` `serverContext` arg.
+
+Per the ADR's stated fallback, **`hydrateRouterContext` (exported from `.`) is the
+typed accessor**: it performs the single `serverContext as …` cast internally, and
+consumer code calls it with zero casts. `ShopifyRequestContext` stays exported from
+`.` for the rare direct reader. If a later TanStack release adds a
+`declare module`-able server-context interface, the augmentation can be added as a
+`.d.ts` pulled in from `.` (same mechanism as `/react`'s `window.shopify`) without
+changing `hydrateRouterContext`'s signature.
+
+### 3 — `defineShopifyMiddleware` delegates the request husk via `.options.server`, the admin husk via `authenticate.admin`
+
+`RequestMiddleware.options.server` preserves its `TServerContext` type param, so the
+`requestMiddleware` husk delegates straight through
+(`mod.requestMiddleware.options.server(options)`) and keeps `{ shopify:
+ShopifyRequestContext }` with no cast. `FunctionMiddleware.options.server` erases
+`TNewServerContext` to `unknown`, so delegating the `adminMiddleware` husk that way
+would drop `AdminMiddlewareContext` (this is the `as never` the old hand-written
+husk needed). Instead the admin husk calls `authenticate.admin(getRequest())`
+directly — `authenticate.admin` **is** the single implementation `adminMiddleware`
+adapts (§1), so `next({ context })` infers `AdminMiddlewareContext` with zero casts.
+Consequently `loadServerModule` must resolve `{ requestMiddleware, authenticate }`
+(both are on the `createShopifyApp` return); `() => import('~/shopify.server')`
+satisfies it once the app re-exports `authenticate`. The `() => import()`
+thunk-as-argument still carries the `// TODO(app-phase)` client-bundle-leak check.

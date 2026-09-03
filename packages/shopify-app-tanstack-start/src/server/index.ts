@@ -33,8 +33,18 @@ export {
   REAUTHORIZE_URL_HEADER,
 } from './auth/headers';
 
-export { redirectToBouncePage, renderAppBridge } from './auth/bounce';
+export { redirectToBouncePage, renderAppBridge, bounceToSessionToken } from './auth/bounce';
 export { renderExitIframe } from './auth/exit-iframe';
+
+// Package-owned `beforeLoad` guards (ADR 0010 4). The app phase replaces the
+// inline `_authenticated.tsx` / `__root.tsx` bodies with these.
+export { authGuard, createAuthGuard, hydrateRouterContext } from './auth/guards';
+export type {
+  AuthGuardArgs,
+  AuthGuardOptions,
+  HydrateRouterContextArgs,
+  HydratedShopifyContext,
+} from './auth/guards';
 export {
   buildManagedInstallUrl,
   buildLoginUrl,
@@ -53,6 +63,22 @@ export type {
   ScopesApiContext,
   BillingApiContext,
 } from './auth/admin-middleware';
+export { authenticateAdmin } from './auth/admin-middleware';
+
+// The `authenticate.*` parity facade (ADR 0010 1). `createShopifyApp(...).authenticate`
+// is the object; these are its per-surface context shapes.
+export type {
+  Authenticate,
+  AdminContext,
+  FlowContext,
+  FulfillmentServiceContext,
+  PosContext,
+  CheckoutContext,
+  AppProxyContext,
+  AuthenticatePublicOptions,
+  EnsureCORSFunction,
+  LiquidResponseFunction,
+} from './authenticate';
 
 // Client-safe router context (WS3 / IP-6-ctx) — exported from the `.` entry too
 // so WS5's `createRootRouteWithContext` can import it from the main path.
@@ -73,10 +99,16 @@ export {
   type Unauthenticated,
 } from '../unauthenticated';
 
-// Webhook factory + types (ADR 0004; full surface at `shopify-app-tanstack-start/webhooks`).
-export { createWebhookHandler, bindWebhookHandlers } from '../webhooks/index';
+// Webhook primitive + factory + types (ADR 0004 + ADR 0010 6; full surface at
+// `shopify-app-tanstack-start/webhooks`).
+export {
+  createAuthenticateWebhook,
+  createWebhookHandler,
+  bindWebhookHandlers,
+} from '../webhooks/index';
 export { registerWebhooks, bindRegisterWebhooks } from '../webhooks/register';
 export type {
+  AuthenticateWebhook,
   WebhookHandler,
   WebhookHandlerMap,
   WebhookContext,
