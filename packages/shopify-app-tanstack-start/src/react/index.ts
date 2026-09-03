@@ -14,6 +14,16 @@ import type { ShopifyGlobal } from './shopify-elements';
 
 export type { ShopifyGlobal } from './shopify-elements';
 
+// App-proxy helpers (ADR 0010 7) — ported from `@shopify/shopify-app-react-router`
+// v2. Leaf components; no server imports.
+export {
+  AppProxyProvider,
+  AppProxyProviderContext,
+  AppProxyLink,
+  type AppProxyProviderProps,
+  type AppProxyLinkProps,
+} from './app-proxy';
+
 /**
  * Returns the App Bridge global, or `undefined` during SSR and before
  * `app-bridge.js` has initialised. Saves every call site re-writing the

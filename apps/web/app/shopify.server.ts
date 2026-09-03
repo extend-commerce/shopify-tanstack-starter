@@ -34,6 +34,11 @@ export const {
   api,
   requestMiddleware,
   adminMiddleware,
+  // The `authenticate.*` parity facade (ADR 0010 1). Re-exported here so
+  // `defineShopifyMiddleware`'s `loadServerModule` (ADR 0010 3 / IP-note) can
+  // resolve `{ requestMiddleware, authenticate }` off `~/shopify.server`, and so
+  // server routes can call `shopify.authenticate.<surface>(request)` directly.
+  authenticate,
   unauthenticated,
   handlers,
   registerWebhooks,

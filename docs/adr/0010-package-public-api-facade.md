@@ -245,5 +245,42 @@ directly — `authenticate.admin` **is** the single implementation `adminMiddlew
 adapts (§1), so `next({ context })` infers `AdminMiddlewareContext` with zero casts.
 Consequently `loadServerModule` must resolve `{ requestMiddleware, authenticate }`
 (both are on the `createShopifyApp` return); `() => import('~/shopify.server')`
-satisfies it once the app re-exports `authenticate`. The `() => import()`
-thunk-as-argument still carries the `// TODO(app-phase)` client-bundle-leak check.
+satisfies it once the app re-exports `authenticate`.
+
+**App-phase resolution of the thunk-as-argument leak check (ENG-2360 Phase 2).**
+A bare `defineShopifyMiddleware(() => import('~/shopify.server'))` **fails** the
+`pnpm --filter web build` — the arrow is a module-scope argument to a plain
+function call, which the Start compiler does not strip, so import-protection
+traces `start.ts → shopify.middleware.ts → import('~/shopify.server')` and denies
+the client build (`generateBundle`, matches the empirical check above). Fix: the
+app wraps the loader in `createIsomorphicFn().server(() => import('~/shopify.server'))`
+— the `.server()` body (and its dynamic import) is stripped from the client
+bundle by the same transform that strips `createMiddleware().server()` bodies, so
+`shopify.middleware.ts` is `import('~/shopify.server')`-free in the client graph.
+`defineShopifyMiddleware` is unchanged; `apps/web/app/shopify.middleware.ts` is
+~6 lines instead of the 2 above (still no `createMiddleware` husk, no `as never`,
+no delegation logic in app code). Client-bundle assertion added to the contract
+tests (greps `.output/public/assets/**` for `pg` / `node:async_hooks` /
+`SHOPIFY_API_SECRET` / `drizzle-orm` / `createShopifyApp` — none present).
+
+### 4 — `authGuard` / `hydrateRouterContext` in isomorphic `beforeLoad`: no client leak (§D check)
+
+ADR 0010 D asked whether importing `authGuard` / `hydrateRouterContext` from the
+package's `.` (server) entry into an isomorphic `beforeLoad` drags a server-only
+graph into the client. It does **not**: `pnpm --filter web build` passes, and the
+client bundle contains only `guards.ts` + `bounce.ts` (both client-safe — the
+bounce string `/auth/session-token` legitimately ships client-side because the
+guard runs on client navigation). No dedicated client-safe `/guards` subpath was
+needed; `.` stays the single import site.
+
+### 2 — `admin.graphql` `.json()` payload is `ClientResponse`, not `FetchResponseBody`
+
+RR's `GraphQLResponse` types `.json()` as `FetchResponseBody<ReturnData<…>>`
+(`{ data?, extensions?, headers? }` — no `errors`). The starter's
+`generate-product.ts` demo checks transport-level `errors` (RR's own template
+does not), and the package already wraps `api.clients.Graphql`'s parsed
+`{ data, errors, extensions }` into the `Response` body at runtime. So the
+package types `.json()` as `ClientResponse<ReturnData<…>>` — a strict superset of
+`FetchResponseBody` that also types `errors` — letting a server fn unwrap
+`const { data, errors } = await res.json()` with **zero casts** (the handoff's
+mandated pattern). `.data` typing is unchanged.

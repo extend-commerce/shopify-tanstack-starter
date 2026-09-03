@@ -22,19 +22,24 @@
  * carry `{ shopify: ShopifyRequestContext }` / `AdminMiddlewareContext` with
  * **zero `as never` / `as unknown` casts** in the app or the package.
  *
- * // TODO(app-phase): verify the () => import() thunk-as-arg does not leak into
- * // the client bundle (a literal `import()` inside `.server()` is a known-safe
- * // spot; passing the thunk as an argument must land in a tree-shaken region —
- * // ADR 0010 3 implementation note, matches TanStack issues #2783 / #6185).
+ * App-phase finding (ADR 0010 Implementation notes 3): a bare
+ * `defineShopifyMiddleware(() => import('~/shopify.server'))` DOES leak — the
+ * thunk is a module-scope call argument the Start compiler does not strip, and
+ * import-protection fails the client build. The app wraps the loader in
+ * `createIsomorphicFn().server(() => import('~/shopify.server'))` so the compiler
+ * strips the specifier from the client bundle; `loadServerModule` still resolves
+ * `{ requestMiddleware, authenticate }` on the server. See
+ * `apps/web/app/shopify.middleware.ts`.
  */
 import { createMiddleware } from '@tanstack/react-start';
 import type { ShopifyApp } from '../server/shopify-app';
 
 /**
- * The server-only surface `loadServerModule` must resolve. `() => import('~/shopify.server')`
- * satisfies it structurally: `~/shopify.server` re-exports `requestMiddleware`
- * (for its `{ shopify }` output type) and `authenticate` (for the cast-free
- * admin-context type) off the `createShopifyApp` return.
+ * The server-only surface `loadServerModule` must resolve. A
+ * `createIsomorphicFn().server(() => import('~/shopify.server'))` loader (app
+ * side) satisfies it structurally: `~/shopify.server` re-exports
+ * `requestMiddleware` (for its `{ shopify }` output type) and `authenticate` (for
+ * the cast-free admin-context type) off the `createShopifyApp` return.
  */
 export interface ShopifyServerModule {
   requestMiddleware: ShopifyApp['requestMiddleware'];

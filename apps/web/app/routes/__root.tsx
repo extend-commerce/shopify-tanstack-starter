@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router';
-import type { ShopifyRouterContext, ShopifyRequestContext } from 'shopify-app-tanstack-start';
+import { hydrateRouterContext } from 'shopify-app-tanstack-start';
+import type { ShopifyRouterContext } from 'shopify-app-tanstack-start';
 // `/react` (IP-10) carries `useShopify()` AND — via its `import type
 // './shopify-elements'` — the `declare module 'react'` shim that types the
 // `<s-*>` custom elements under React 19's `React.JSX`. Importing anything from
@@ -12,40 +13,17 @@ const POLARIS_SRC = 'https://cdn.shopify.com/shopifycloud/polaris.js';
 
 export const Route = createRootRouteWithContext<ShopifyRouterContext>()({
   /**
-   * The eager global `requestMiddleware` (ADR 0002) has already run for this SSR
-   * request and put `{ session, shop, sessionToken, isAuthenticated }` on the
-   * request-middleware context. TanStack Start exposes that to a route as the
-   * `serverContext` arg (it sets `router.options.additionalContext = { serverContext }`
-   * before `load()`, and `beforeLoad`/`loader` receive it spread onto their args
-   * — verified in `@tanstack/start-server-core`'s `createStartHandler`).
-   *
-   * Copy ONLY the two client-safe fields into router context, where they
-   * dehydrate for the browser — `session` / `sessionToken` must NEVER cross
-   * (cross-cutting rule #4). No auth *logic* here — the `_authenticated` layout
-   * owns the bounce.
-   *
-   * `serverContext` is absent when this re-runs on the CLIENT (a `router.invalidate()`
-   * after a mutation, or any nav that revalidates the root). The base router
-   * context still holds the SSR seed (`shop: ''`, `isAuthenticated: false`), so
-   * we must NOT fall back to it — that would drop `isAuthenticated` to `false`
-   * mid-session and bounce a working embedded app. Instead trust App Bridge:
-   * if `window.shopify` is initialised the frame is embedded and the fetch
-   * interceptor + `adminMiddleware` retry keep tokens fresh.
+   * `hydrateRouterContext` (ADR 0010 4) copies the two client-safe fields
+   * `{ shop, isAuthenticated }` out of the SSR `serverContext.shopify` (the eager
+   * `requestMiddleware` result — ADR 0002) into router context, where they
+   * dehydrate for the browser. `session` / `sessionToken` never cross
+   * (cross-cutting rule #4). It also owns the client re-run fallback (trust App
+   * Bridge, don't drop `isAuthenticated` to `false` mid-session). No auth *logic*
+   * here — the `_authenticated` layout owns the bounce. Using the package
+   * accessor removes the `serverContext as …` cast this file used to carry
+   * (ADR 0010 Implementation notes 5).
    */
-  beforeLoad: ({ context, serverContext }) => {
-    const ssr = (serverContext as { shopify?: ShopifyRequestContext } | undefined)?.shopify;
-    if (ssr) {
-      return { shop: ssr.shop ?? '', isAuthenticated: ssr.isAuthenticated };
-    }
-    const appBridge =
-      typeof window !== 'undefined'
-        ? (window as { shopify?: { config?: { shop?: string } } }).shopify
-        : undefined;
-    if (appBridge) {
-      return { shop: appBridge.config?.shop ?? context.shop, isAuthenticated: true };
-    }
-    return { shop: context.shop, isAuthenticated: context.isAuthenticated };
-  },
+  beforeLoad: hydrateRouterContext,
   loader: () => ({
     // Public client ID. Server-only read of the CLI-injected var — there is no
     // `VITE_` mirror (ADR 0008 env). `undefined` on the client; the value is

@@ -29,6 +29,9 @@
       "dependsOn": ["routes:generate", "graphql-codegen"]
     },
     "lint": {},
+    "test": {
+      "cache": false
+    },
     "format:check": {},
     "db:generate": {
       "cache": false

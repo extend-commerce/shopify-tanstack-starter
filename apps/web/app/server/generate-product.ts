@@ -16,13 +16,16 @@ import type {
  *     Admin API access happens; the access token never reaches a loader/route.
  *   - the client calls it from `useMutation`, then `router.invalidate()`.
  *
- * `context.admin.graphql(query, ...)` returns the PARSED `{ data, errors,
- * extensions }` (cross-cutting rule #5 / ADR 0003) — NOT a Fetch `Response`.
+ * `context.admin.graphql(query, ...)` resolves a Fetch `Response` (RR-exact —
+ * ADR 0010 2, reverses ADR 0003). Unwrap it explicitly:
+ *   const res = await context.admin.graphql(QUERY, { variables });
+ *   const { data, errors } = await res.json();
  * Because `query` is one of the `#graphql`-tagged literals below AND
  * `@shopify/admin-api-client` is a direct dep of `apps/web`, the codegen output
  * in `app/types/admin.generated.d.ts` module-augments the client's operation map
- * (IP-5), so `response.data` is fully typed — no `as` casts, no hand-written
- * result shape.
+ * (IP-5), so `(await res.json()).data` is fully typed — no `as` casts, no
+ * hand-written result shape. The `Response` never crosses to the client (the
+ * server fn's own return value is what serialises).
  */
 
 const PRODUCT_CREATE_MUTATION = `#graphql
@@ -92,11 +95,12 @@ export const generateProduct = createServerFn({ method: 'POST' })
     const createResponse = await context.admin.graphql(PRODUCT_CREATE_MUTATION, {
       variables: { product: { title: `${color} Snowboard` } },
     });
+    const { data: createData, errors: createErrors } = await createResponse.json();
 
-    const created = createResponse.data?.productCreate;
-    if (createResponse.errors || created?.userErrors?.length) {
+    const created = createData?.productCreate;
+    if (createErrors || created?.userErrors?.length) {
       throw new Error(
-        `productCreate failed: ${JSON.stringify(createResponse.errors ?? created?.userErrors)}`,
+        `productCreate failed: ${JSON.stringify(createErrors ?? created?.userErrors)}`,
       );
     }
 
@@ -115,12 +119,13 @@ export const generateProduct = createServerFn({ method: 'POST' })
           variants: [{ id: firstVariantId, price: '99.99' }],
         },
       });
+      const { data: variantData, errors: variantErrors } = await variantResponse.json();
 
-      const updated = variantResponse.data?.productVariantsBulkUpdate;
-      if (variantResponse.errors || updated?.userErrors?.length) {
+      const updated = variantData?.productVariantsBulkUpdate;
+      if (variantErrors || updated?.userErrors?.length) {
         throw new Error(
           `productVariantsBulkUpdate failed: ${JSON.stringify(
-            variantResponse.errors ?? updated?.userErrors,
+            variantErrors ?? updated?.userErrors,
           )}`,
         );
       }

@@ -17,7 +17,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@shopify/admin-api-client": "catalog:",
@@ -43,8 +44,11 @@
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "react": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "5.0.0"
   }
 }

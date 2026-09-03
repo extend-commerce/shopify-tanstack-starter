@@ -1,37 +1,35 @@
 /**
- * Client-safe handles for the two Shopify middlewares.
+ * Client-safe handles for the two Shopify middlewares (ADR 0010 3).
  *
  * `~/shopify.server` builds the `createShopifyApp` instance at module scope — it
  * pulls in `pg` and the Node `@shopify/shopify-api` adapter, so it must never
- * enter the client bundle (import-protection blocks the server-file glob and
- * `node:` built-ins there). But `start.ts` (a client entry) needs the global
- * request middleware, and every `createServerFn` caller file needs
+ * enter the client bundle. `start.ts` (a client entry) still needs the global
+ * `requestMiddleware`, and every `createServerFn` caller file needs
  * `adminMiddleware` — and a `createServerFn().middleware([...])` argument is NOT
- * stripped from the client build (only `.handler()` / `.validator()` are).
+ * stripped from the client build.
  *
- * So each middleware here is a thin `createMiddleware` shell whose `.server()`
- * body dynamically imports `~/shopify.server` and delegates to the package
- * middleware's own server handler (passing our `next` through so the delegate's
- * `next({ context })` becomes ours). The compiler strips `.server()` bodies (and
- * that dynamic import with them) from the client bundle, leaving only the
- * `createMiddleware` husk — all the client ever references. The explicit
- * `.server<...>()` context type re-declares what the delegate contributes
- * (`{ admin, session, scopes, billing }`, IP-4), which a dynamic import can't
- * infer, so it stays typed at the `createServerFn` call site.
+ * `defineShopifyMiddleware` (from the client-safe `/middleware` entry) owns the
+ * `createMiddleware` husk + the dynamic import + delegation to the package's real
+ * request middleware / `authenticate.admin`; the returned middlewares carry
+ * `{ shopify: ShopifyRequestContext }` / `AdminMiddlewareContext` with zero `as`
+ * casts here.
+ *
+ * The `() => import('~/shopify.server')` module loader is wrapped in
+ * `createIsomorphicFn().server(...)` so the Start compiler strips the
+ * `~/shopify.server` specifier (and its `pg` / Node-adapter graph) from the
+ * CLIENT bundle — a bare thunk passed straight to `defineShopifyMiddleware(...)`
+ * is a module-scope argument the compiler does NOT strip, and import-protection
+ * rejects the build (ADR 0010 Implementation notes 3 — the deferred
+ * thunk-as-argument leak check). The `.client()` branch never runs: nothing
+ * client-side calls these middlewares' `.server()` bodies.
  */
-import { createMiddleware } from '@tanstack/react-start';
-import type { AdminMiddlewareContext, ShopifyRequestContext } from 'shopify-app-tanstack-start';
+import { createIsomorphicFn } from '@tanstack/react-start';
+import { defineShopifyMiddleware } from 'shopify-app-tanstack-start/middleware';
 
-export const requestMiddleware = createMiddleware({ type: 'request' }).server<{
-  shopify: ShopifyRequestContext;
-}>(async ({ next, ...rest }) => {
-  const { shopify } = await import('~/shopify.server');
-  return shopify.requestMiddleware.options.server!({ ...rest, next } as never) as never;
-});
+const loadServerModule = createIsomorphicFn()
+  .server(() => import('~/shopify.server'))
+  .client(() => {
+    throw new Error('shopify.middleware: server module loaded on the client');
+  });
 
-export const adminMiddleware = createMiddleware({
-  type: 'function',
-}).server<AdminMiddlewareContext>(async ({ next, ...rest }) => {
-  const { shopify } = await import('~/shopify.server');
-  return shopify.adminMiddleware.options.server!({ ...rest, next } as never) as never;
-});
+export const { requestMiddleware, adminMiddleware } = defineShopifyMiddleware(loadServerModule);

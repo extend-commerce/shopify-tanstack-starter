@@ -1,35 +1,20 @@
 import { useEffect } from 'react';
-import { Outlet, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { authGuard } from 'shopify-app-tanstack-start';
 
 /**
  * The pathless embedded-auth UX gate (ADR 0006 route structure / IP-6). This is
  * the ONLY auth gate — not per-route checks. The eager global `requestMiddleware`
  * (ADR 0002) never throws for missing auth; this layout does the bounce.
+ *
+ * `authGuard` (ADR 0010 4) owns that bounce: the `window.shopify` mid-session
+ * short-circuit, the `context.isAuthenticated` pass-through, and — otherwise —
+ * the `id_token` strip + `throw redirect()` to `/auth/session-token`. The app
+ * keeps only the choice of which route to gate.
  */
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: ({ context, location }) => {
-    // On the CLIENT, App Bridge being initialised (`window.shopify`) means the
-    // frame is embedded and can mint fresh tokens — never bounce mid-session
-    // (that would tear down the subtree on every `router.invalidate()`). Only the
-    // SSR path, or a genuinely un-embedded client, reaches the bounce below.
-    if (typeof window !== 'undefined' && (window as { shopify?: unknown }).shopify) {
-      return;
-    }
-    if (context.isAuthenticated) {
-      return;
-    }
-    // Bounce to the App Bridge `session-token` reload (ADR 0002). `/auth/$` (a
-    // server route) renders the `shopify-reload` HTML that re-enters with a fresh
-    // token. Preserve `host` / `shop` / `embedded` from the current URL (drop
-    // only `id_token`) so App Bridge on the bounce page can initialise — mirrors
-    // the package's `redirectToBouncePage`. `href` (not `to`) because `/auth/*`
-    // is a server route outside the client route tree.
-    const params = new URLSearchParams(location.searchStr);
-    params.delete('id_token');
-    params.set('shopify-reload', location.pathname + location.searchStr);
-    throw redirect({ href: `/auth/session-token?${params.toString()}` });
-  },
+  beforeLoad: authGuard,
   component: AuthenticatedLayout,
 });
 
@@ -69,6 +54,7 @@ function AuthenticatedLayout() {
           Home
         </s-link>
         <s-link href="/app/additional">Additional</s-link>
+        <s-link href="/app/proxy-demo">App proxy</s-link>
       </s-app-nav>
 
       {/* Raw `<Outlet/>` — no `<Page>` wrapper (ADR 0006); pages own their `<s-page>`. */}

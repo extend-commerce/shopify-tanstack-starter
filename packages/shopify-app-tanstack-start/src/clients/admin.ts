@@ -2,7 +2,7 @@ import type {
   AllOperations,
   AdminOperations,
   ApiClientRequestOptions,
-  FetchResponseBody,
+  ClientResponse,
   ResponseWithType,
   ReturnData,
 } from '@shopify/admin-api-client';
@@ -52,11 +52,17 @@ export interface GraphQLQueryOptions<
  * A Fetch `Response` whose `.json()` is typed against the operation's return
  * data (RR `GraphQLResponse`). Structurally a `Response`, so `res.status` /
  * `res.headers` are available.
+ *
+ * The `.json()` payload is `ClientResponse<…>` (`{ data?, errors?, extensions? }`)
+ * — a superset of RR's `FetchResponseBody<…>` that also types the transport-level
+ * `errors` array the wrapped `api.clients.Graphql` request already puts in the
+ * body. A server fn unwraps `const { data, errors } = await res.json()` with no
+ * cast (ADR 0010 2).
  */
 export type GraphQLResponse<
   Operation extends keyof Operations,
   Operations extends AllOperations,
-> = ResponseWithType<FetchResponseBody<ReturnData<Operation, Operations>>>;
+> = ResponseWithType<ClientResponse<ReturnData<Operation, Operations>>>;
 
 /** RR `GraphQLClient<Operations>` — a typed `admin.graphql`. */
 export type GraphQLClient<Operations extends AllOperations> = <Operation extends keyof Operations>(
