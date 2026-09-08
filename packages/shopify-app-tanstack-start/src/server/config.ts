@@ -1,10 +1,7 @@
 import { shopifyApi, type ConfigParams, type Session, type Shopify } from '@shopify/shopify-api';
 import type { SessionStorage } from '@shopify/shopify-app-session-storage';
 import type { AdminApiContext } from '../clients/admin';
-import {
-  createMemoryAuthCoordinationStore,
-  type AuthCoordinationStore,
-} from './auth/coordination';
+import { createMemoryAuthCoordinationStore, type AuthCoordinationStore } from './auth/coordination';
 
 /**
  * Distribution model (ADR 0001 Consequences). `AppStore` (default) +

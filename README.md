@@ -8,10 +8,10 @@ offline clients, and webhook handling.
 
 Two workspaces in one pnpm + Turborepo monorepo:
 
-| Path                                                                         | What it is                                                                                                                                     |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`packages/shopify-app-tanstack-start`](packages/shopify-app-tanstack-start) | The framework-glue package. Consumed as TypeScript source (not published).                                                                     |
-| [`apps/web`](apps/web)                                                       | The embedded admin app — Polaris **web components** on the CDN App Home stack (App Bridge + `polaris.js`), Drizzle + SQLite session storage.   |
+| Path                                                                         | What it is                                                                                                                                   |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`packages/shopify-app-tanstack-start`](packages/shopify-app-tanstack-start) | The framework-glue package. Consumed as TypeScript source (not published).                                                                   |
+| [`apps/web`](apps/web)                                                       | The embedded admin app — Polaris **web components** on the CDN App Home stack (App Bridge + `polaris.js`), Drizzle + SQLite session storage. |
 
 The full design is recorded in [`docs/adr/0001`–`0017`](docs/adr), the build plan
 in [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md), and the Cloudflare deploy plan in
@@ -51,8 +51,8 @@ CLI. Vite forwards the root `.env` onto `process.env` for the app; `drizzle-kit`
 | `pnpm db:up`                                  | `.data/` SQLite file → migrate → seed                                                          |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle Kit migration workflow                                                                 |
 | `pnpm db:studio`                              | Drizzle Studio (browse the `session` table) at `https://local.drizzle.studio`                  |
-| `pnpm deploy:staging`                         | Workers build + `wrangler deploy` via `wrangler.jsonc` (see Deployment)                         |
-| `pnpm deploy:production`                      | Workers build + `wrangler deploy` via `wrangler.production.jsonc`                               |
+| `pnpm deploy:staging`                         | Workers build + `wrangler deploy` via `wrangler.jsonc` (see Deployment)                        |
+| `pnpm deploy:production`                      | Workers build + `wrangler deploy` via `wrangler.production.jsonc`                              |
 
 Node production serve (local smoke): `pnpm build` then
 `node apps/web/.output/server/index.mjs`.

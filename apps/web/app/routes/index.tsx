@@ -35,8 +35,7 @@ function RootIndex() {
   return (
     <main
       style={{
-        fontFamily:
-          'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         margin: '2rem auto',
         maxWidth: '36rem',
         lineHeight: 1.5,

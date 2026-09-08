@@ -25,7 +25,8 @@ const MARKERS: Marker[] = [
   {
     label: 'better-sqlite3',
     hit: (c) =>
-      /(?:from|require\(|import\()\s*["']better-sqlite3["']/.test(c) || c.includes('better_sqlite3'),
+      /(?:from|require\(|import\()\s*["']better-sqlite3["']/.test(c) ||
+      c.includes('better_sqlite3'),
   },
   { label: 'node:async_hooks', hit: (c) => c.includes('node:async_hooks') },
   { label: 'SHOPIFY_API_SECRET', hit: (c) => c.includes('SHOPIFY_API_SECRET') },
