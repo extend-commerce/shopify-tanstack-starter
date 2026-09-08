@@ -3,23 +3,24 @@ import { defineConfig, loadEnv } from 'vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { nitro } from 'nitro/vite';
+import { cloudflare } from '@cloudflare/vite-plugin';
 
 /**
- * DEPLOYMENT PORTABILITY SWAP POINT (ADR 0009).
+ * DEPLOYMENT PORTABILITY SWAP POINT (ADR 0009 / ADR 0011).
  *
- * The `nitro({ preset })` below is the build-target seam. `node-server` is the
- * only target this starter ships. A Cloudflare Workers move swaps `nitro()` for
- * `@cloudflare/vite-plugin` (+ `wrangler.jsonc`); AWS Lambda swaps the preset to
- * `aws_lambda`; ECS / Cloud Run keep `node-server` and containerize `.output/`.
- * See docs/adr/0009 for the per-target change tables. The other non-portable
- * file is `app/db/client.ts` (the `pg` driver).
+ * Two modes, one file:
+ *   - Default (`shopify app dev`, `pnpm --filter web dev` / `build` / `start`):
+ *     TanStack Start Vite SSR + `nitro({ preset: 'node-server' })` on `vite build`.
+ *   - `CLOUDFLARE=1` (`pnpm --filter web deploy`): `@cloudflare/vite-plugin`
+ *     first, no nitro, `~/platform` aliased to the Workers bindings module.
  *
- * `nitro()` is applied for `vite build` only. In dev, TanStack Start's own
+ * The other non-portable file is `app/db/client.ts` (better-sqlite3; Workers
+ * uses `app/db/client.d1.ts` via the platform alias).
+ *
+ * `nitro()` is applied for Node `vite build` only. In dev, TanStack Start's own
  * dev-server middleware handles SSR; the pinned `nitro@3.0.x-beta` dev worker
  * looks for a Vite env named `ssr` while Start registers it as `server`, so
- * leaving `nitro()` in the dev pipeline 500s every request
- * (`Vite environment "ssr" is unavailable`). Prod build + `node .output/server/index.mjs`
- * are unaffected.
+ * leaving `nitro()` in the Node-dev pipeline 500s every request.
  */
 export default defineConfig(({ command, mode }) => {
   // `.env` lives at the MONOREPO ROOT (next to `shopify.app.toml`), so
@@ -35,6 +36,23 @@ export default defineConfig(({ command, mode }) => {
     if (process.env[key] === undefined) process.env[key] = value;
   }
 
+  const invokedViaWrangler = process.argv.some(
+    (arg) => arg === 'wrangler' || /(?:^|[/\\])wrangler(?:\.js)?$/.test(arg),
+  );
+  const lifecycle = process.env.npm_lifecycle_event;
+  const isCloudflare =
+    process.env.CLOUDFLARE === '1' ||
+    lifecycle === 'deploy' ||
+    lifecycle === 'deploy:staging' ||
+    lifecycle === 'deploy:production' ||
+    lifecycle === 'build:cf' ||
+    lifecycle === 'preview:cf' ||
+    lifecycle === 'cf-typegen' ||
+    invokedViaWrangler ||
+    typeof process.env.CLOUDFLARE_ENV === 'string' ||
+    typeof process.env.WRANGLER_CONFIG === 'string';
+  const wranglerConfigPath = process.env.WRANGLER_CONFIG;
+
   return {
     resolve: {
       // Resolve the `~/*` -> `./app/*` alias from tsconfig.json for every module,
@@ -42,6 +60,11 @@ export default defineConfig(({ command, mode }) => {
       // transform pipeline (a bare `pnpm dev` 500s on `~/shopify.middleware`
       // without this).
       tsconfigPaths: true,
+      alias: isCloudflare
+        ? {
+            '~/platform': resolve(import.meta.dirname, 'app/platform.cf.ts'),
+          }
+        : undefined,
     },
     server: {
       // `shopify app dev` injects PORT; fall back to 3000 for a bare `pnpm dev`.
@@ -52,11 +75,42 @@ export default defineConfig(({ command, mode }) => {
       allowedHosts: true,
     },
     plugins: [
+      // Remap Node-only modules before tsconfig `~/*` paths. Webhook routes
+      // used to import `~/db/client` (better-sqlite3); that pulled
+      // `path.resolve(undefined)` into the Worker and 500'd every request.
+      ...(isCloudflare
+        ? [
+            {
+              name: 'workers-platform-alias',
+              enforce: 'pre' as const,
+              resolveId(id: string) {
+                if (id === '~/platform' || id.endsWith('/app/platform.ts')) {
+                  return resolve(import.meta.dirname, 'app/platform.cf.ts');
+                }
+                if (id === '~/db/client' || id.endsWith('/app/db/client.ts')) {
+                  return resolve(import.meta.dirname, 'app/db/client.d1.ts');
+                }
+                return undefined;
+              },
+            },
+          ]
+        : []),
+      // `cloudflare()` MUST be first among framework plugins (ADR 0011).
+      ...(isCloudflare
+        ? [
+            cloudflare({
+              viteEnvironment: { name: 'ssr' },
+              // Default: wrangler.jsonc (staging). Production sets WRANGLER_CONFIG.
+              // Do not pass `wrangler deploy -c` — that skips Vite (ADR 0011).
+              ...(wranglerConfigPath ? { configPath: wranglerConfigPath } : {}),
+            }),
+          ]
+        : []),
       // `tanstackStart()` must come before `viteReact()`. `srcDirectory: 'app'`
       // matches the route/codegen paths (ADR 0008).
       tanstackStart({ srcDirectory: 'app' }),
       viteReact(),
-      ...(command === 'build' ? [nitro({ preset: 'node-server' })] : []),
+      ...(!isCloudflare && command === 'build' ? [nitro({ preset: 'node-server' })] : []),
     ],
     ssr: {
       // The framework-glue package is consumed as JIT TypeScript source, not a

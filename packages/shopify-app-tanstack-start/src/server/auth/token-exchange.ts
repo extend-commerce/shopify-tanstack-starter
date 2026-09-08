@@ -1,6 +1,7 @@
 import { RequestedTokenType, type JwtPayload, type Session } from '@shopify/shopify-api';
 import type { ShopifyAppInternals } from '../config';
 import { createAdminApiContext } from '../../clients/admin';
+import { AFTER_AUTH_TTL_MS } from './coordination';
 
 /** RR's expiry slack: `session.isActive(undefined, WITHIN_MILLISECONDS_OF_EXPIRY)`. */
 export const WITHIN_MILLISECONDS_OF_EXPIRY = 5 * 60 * 1000;
@@ -15,28 +16,12 @@ export function getSessionTokenFromRequest(request: Request, url: URL): string |
 }
 
 /* ------------------------------------------------------------------------- *
- * Per-process idempotency + in-flight de-dupe.
+ * Token-exchange coordination (ADR 0013).
  *
- * These are intentionally IN-MEMORY and NOT behind a seam (ADR 0009 Known
- * single-instance limitation). On multi-instance hosting two instances can each
- * run `hooks.afterAuth` once for the same shop inside the 60s TTL window. For the
- * starter's no-op handler this is harmless; the deferred deployment effort swaps
- * a shared lock (Durable Object / Redis SETNX / Postgres advisory lock) behind
- * these exact call sites. Do NOT add an abstraction here.
+ * Default is the in-memory `AuthCoordinationStore` (per `createShopifyApp`
+ * instance). Workers pass a KV-backed store from `apps/web`. Do not put
+ * Cloudflare types in this file.
  * ------------------------------------------------------------------------- */
-const inFlightByShop = new Map<string, Promise<Session>>();
-const afterAuthSeen = new Map<string, number>();
-const AFTER_AUTH_TTL_MS = 60 * 1000;
-
-async function runAfterAuthOnce(key: string, fn: () => Promise<void> | void): Promise<void> {
-  const now = Date.now();
-  for (const [seenKey, expiresAt] of afterAuthSeen) {
-    if (expiresAt <= now) afterAuthSeen.delete(seenKey);
-  }
-  if (afterAuthSeen.has(key)) return;
-  afterAuthSeen.set(key, now + AFTER_AUTH_TTL_MS);
-  await fn();
-}
 
 /**
  * The eager token-exchange / refresh pipeline (ADR 0002 Auth boundary).
@@ -54,6 +39,7 @@ export async function ensureAuthenticatedOfflineSession(
 ): Promise<Session> {
   const { api, sessionStorage, config } = internals;
   const { sessionToken, shop } = args;
+  const coordination = config.authCoordination;
 
   const sessionId = api.session.getOfflineId(shop);
   const existing = await sessionStorage.loadSession(sessionId);
@@ -61,10 +47,7 @@ export async function ensureAuthenticatedOfflineSession(
     Boolean(existing?.accessToken) && existing!.isActive(undefined, WITHIN_MILLISECONDS_OF_EXPIRY);
   if (isFresh) return existing as Session;
 
-  const inFlight = inFlightByShop.get(shop);
-  if (inFlight) return inFlight;
-
-  const work = (async (): Promise<Session> => {
+  return coordination.runExclusive(shop, async () => {
     let session: Session;
     if (config.future.expiringOfflineAccessTokens && existing?.refreshToken) {
       const refreshed = await api.auth.refreshToken({
@@ -84,22 +67,14 @@ export async function ensureAuthenticatedOfflineSession(
 
     await sessionStorage.storeSession(session);
 
-    await runAfterAuthOnce(sessionToken, async () => {
-      if (config.hooks?.afterAuth) {
-        await config.hooks.afterAuth({
-          session,
-          admin: createAdminApiContext(session, config.apiVersion),
-        });
-      }
-    });
+    const claimed = await coordination.claimAfterAuth(sessionToken, AFTER_AUTH_TTL_MS);
+    if (claimed && config.hooks?.afterAuth) {
+      await config.hooks.afterAuth({
+        session,
+        admin: createAdminApiContext(session, config.apiVersion),
+      });
+    }
 
     return session;
-  })();
-
-  inFlightByShop.set(shop, work);
-  try {
-    return await work;
-  } finally {
-    inFlightByShop.delete(shop);
-  }
+  });
 }

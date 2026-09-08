@@ -1,11 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vite/client"],
+    "types": ["vite/client", "@cloudflare/workers-types"],
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "paths": {
       "~/*": ["./app/*"]
     }
   },
-  "include": ["app", "vite.config.ts", "drizzle.config.ts", ".graphqlrc.ts"]
+  "include": ["app", "vite.config.ts", "drizzle.config.ts", ".graphqlrc.ts", "env.d.ts"]
 }

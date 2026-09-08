@@ -3,8 +3,8 @@
  * assertion (this replaces the manual "does the husk leak?" experiment).
  *
  * `pnpm --filter web build` must pass (import-protection would fail it if a
- * server-only graph — `~/shopify.server` and its `pg` / Node-adapter / Drizzle
- * deps — reached the client via `shopify.middleware.ts` or via the `authGuard` /
+ * server-only graph — `~/shopify.server` and its SQLite / runtime-adapter /
+ * Drizzle deps — reached the client via `shopify.middleware.ts` or via the `authGuard` /
  * `hydrateRouterContext` imports from the package's `.` entry), and the emitted
  * client assets must contain none of the server-only markers below.
  */
@@ -22,14 +22,10 @@ interface Marker {
 }
 
 const MARKERS: Marker[] = [
-  // A leaked `pg` import survives as a module specifier; bare "pg" as a substring
-  // is too noisy, so match it as an import/require target or its inlined source.
   {
-    label: 'pg (node-postgres)',
+    label: 'better-sqlite3',
     hit: (c) =>
-      /(?:from|require\(|import\()\s*["']pg["']/.test(c) ||
-      c.includes('pg-pool') ||
-      c.includes('pg-protocol'),
+      /(?:from|require\(|import\()\s*["']better-sqlite3["']/.test(c) || c.includes('better_sqlite3'),
   },
   { label: 'node:async_hooks', hit: (c) => c.includes('node:async_hooks') },
   { label: 'SHOPIFY_API_SECRET', hit: (c) => c.includes('SHOPIFY_API_SECRET') },

@@ -1,0 +1,43 @@
+/**
+ * Production Worker — CI (`pnpm deploy:production`).
+ * Deploy with WRANGLER_CONFIG=wrangler.production.jsonc, not `wrangler deploy -c`
+ * (that skips the Vite plugin).
+ * Do not fill this from a staging terraform apply or a local CLI try-out.
+ *
+ * Binding names (DB, AUTH_KV) must match app/platform.cf.ts.
+ * Worker name, D1 IDs, KV IDs, and HOST are written by production `terraform apply`.
+ * SHOPIFY_API_KEY is set in CI. SHOPIFY_API_SECRET is a wrangler secret.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shopify-tanstack-starter-production",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./app/server.ts",
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": false,
+    },
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shopify-tanstack-starter-production-db",
+      "database_id": "REPLACE_FROM_TERRAFORM_OUTPUT",
+      "migrations_dir": "app/db/migrations",
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "REPLACE_FROM_TERRAFORM_OUTPUT",
+    },
+  ],
+  "vars": {
+    "SCOPES": "write_products",
+  },
+}

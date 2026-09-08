@@ -164,9 +164,11 @@ exercise; verified later via a dedicated test app).
 
 ### 8. Package `exports` map
 
-Adds `/middleware` (client-safe). `.` / `/react` / `/webhooks` / `/clients` /
-`/adapters/node` unchanged. Package stays unpublished / JIT TypeScript source (ADR
-0008 unchanged); `dist/` + release automation remain out of scope.
+Adds `/middleware` (client-safe). `.` / `/react` / `/webhooks` / `/clients`
+unchanged — **no** `/adapters/*` exports. Runtime polyfills are imported from
+`@shopify/shopify-api/adapters/<runtime>` in the app platform seam (amends ADR
+0009). Package stays unpublished / JIT TypeScript source (ADR 0008 unchanged);
+`dist/` + release automation remain out of scope.
 
 ## Considered and rejected
 

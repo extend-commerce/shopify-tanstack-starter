@@ -1,0 +1,40 @@
+# Staging Shopify app config (ADR 0016). Create a separate app in the Partner
+# Dashboard and paste its client_id. Deploy with:
+#   shopify app deploy --config shopify.app.staging.toml
+#
+# application_url is the staging Worker (`*.workers.dev` after first wrangler
+# deploy). Keep webhook paths identical to shopify.app.toml.
+
+client_id = "3719cb34829f73d8523c9e87d3f73544"
+application_url = "https://shopify-tanstack-starter-staging.personal-93c.workers.dev"
+embedded = true
+name = "Tanstack Starter - Staging"
+handle = "tanstack-starter-staging"
+
+[access_scopes]
+scopes = "write_products"
+
+[auth]
+redirect_urls = ["https://shopify-tanstack-starter-staging.personal-93c.workers.dev/auth"]
+
+[webhooks]
+api_version = "2026-07"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app.uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app.scopes_update"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "/webhooks/compliance/customers-data-request"
+customer_deletion_url = "/webhooks/compliance/customers-redact"
+shop_deletion_url = "/webhooks/compliance/shop-redact"
+
+[build]
+automatically_update_urls_on_dev = false
+
+[access.admin]
+direct_api_mode = "online"

@@ -23,7 +23,7 @@
     },
     "build": {
       "dependsOn": ["^build", "routes:generate", "graphql-codegen"],
-      "outputs": [".output/**", ".nitro/**", "dist/**"]
+      "outputs": [".output/**", ".nitro/**", "dist/**", ".wrangler/**"]
     },
     "typecheck": {
       "dependsOn": ["routes:generate", "graphql-codegen"]

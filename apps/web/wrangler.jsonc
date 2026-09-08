@@ -1,0 +1,36 @@
+/**
+ * Staging Worker (`wrangler.jsonc`). Filled by staging terraform apply; CLI deploys use this file.
+ * Binding names (DB, AUTH_KV) are the contract with app/platform.cf.ts.
+ * Worker name, D1 IDs, KV IDs, and HOST are written by terraform apply
+ * via infra/scripts/sync-wrangler-jsonc.mjs.
+ * SHOPIFY_API_KEY stays a hand-edited var. SHOPIFY_API_SECRET is a wrangler secret.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shopify-tanstack-starter-staging",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./app/server.ts",
+  "observability": {
+    "enabled": false,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shopify-tanstack-starter-staging-db",
+      "database_id": "fb639d87-9e3d-41a2-a416-baf1956428f5",
+      "migrations_dir": "app/db/migrations",
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "eb731fa732e541e99fcefc48e77742df",
+    },
+  ],
+  "vars": {
+    "SCOPES": "write_products",
+    "HOST": "https://shopify-tanstack-starter-staging.personal-93c.workers.dev",
+    "SHOPIFY_API_KEY": "3719cb34829f73d8523c9e87d3f73544",
+  },
+}
