@@ -11,15 +11,15 @@ Two workspaces in one pnpm + Turborepo monorepo:
 | Path                                                                         | What it is                                                                                                                                     |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`packages/shopify-app-tanstack-start`](packages/shopify-app-tanstack-start) | The framework-glue package. Consumed as TypeScript source (not published).                                                                     |
-| [`apps/web`](apps/web)                                                       | The embedded admin app — Polaris **web components** on the CDN App Home stack (App Bridge + `polaris.js`), Drizzle + Postgres session storage. |
+| [`apps/web`](apps/web)                                                       | The embedded admin app — Polaris **web components** on the CDN App Home stack (App Bridge + `polaris.js`), Drizzle + SQLite session storage.   |
 
-The full design is recorded in [`docs/adr/0001`–`0009`](docs/adr) and the
-execution plan in [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md).
+The full design is recorded in [`docs/adr/0001`–`0017`](docs/adr), the build plan
+in [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md), and the Cloudflare deploy plan in
+[`docs/DEPLOY-PLAN.md`](docs/DEPLOY-PLAN.md).
 
 ## Prerequisites
 
 - **Node 22** (`.nvmrc`) and **pnpm 10** (`corepack enable`)
-- **Docker** — for the local Postgres (`docker-compose.yml`)
 - A **Shopify Partner account** + a development store, and the
   [Shopify CLI](https://shopify.dev/docs/api/shopify-cli)
 
@@ -27,14 +27,14 @@ execution plan in [`docs/BUILD-PLAN.md`](docs/BUILD-PLAN.md).
 
 ```bash
 pnpm i
-pnpm db:up          # starts Postgres, runs migrations, seeds
+pnpm db:up          # creates .data/dev.sqlite, runs migrations, seeds
 shopify app dev      # runs apps/web's Vite directly, tunnels, injects env
 ```
 
 `shopify app dev` injects `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SCOPES`,
 `HOST`, and `PORT` directly. Everything else comes from **one `.env` at the repo
 root** (next to `shopify.app.toml` — this is where `shopify app env pull` writes).
-Copy `.env.example` to `.env` and set `DATABASE_URL` (always needed); add the
+Copy `.env.example` to `.env` (the default `DATABASE_URL` is fine); add the
 `SHOPIFY_*` values too if you run `pnpm --filter web dev` / `start` without the
 CLI. Vite forwards the root `.env` onto `process.env` for the app; `drizzle-kit`,
 `db:seed`, and `start` load it themselves.
@@ -48,22 +48,26 @@ CLI. Vite forwards the root `.env` onto `process.env` for the app; `drizzle-kit`
 | `pnpm typecheck`                              | `tsc --noEmit` per workspace                                                                   |
 | `pnpm lint`                                   | oxlint                                                                                         |
 | `pnpm format` / `pnpm format:check`           | Prettier                                                                                       |
-| `pnpm db:up`                                  | Postgres container → migrate → seed                                                            |
+| `pnpm db:up`                                  | `.data/` SQLite file → migrate → seed                                                          |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle Kit migration workflow                                                                 |
 | `pnpm db:studio`                              | Drizzle Studio (browse the `session` table) at `https://local.drizzle.studio`                  |
+| `pnpm deploy:staging`                         | Workers build + `wrangler deploy` via `wrangler.jsonc` (see Deployment)                         |
+| `pnpm deploy:production`                      | Workers build + `wrangler deploy` via `wrangler.production.jsonc`                               |
 
-Production serve: `pnpm build` then `node apps/web/.output/server/index.mjs`.
+Node production serve (local smoke): `pnpm build` then
+`node apps/web/.output/server/index.mjs`.
 
 ## Deployment
 
-The starter targets **Node 22** (`nitro({ preset: 'node-server' })`). It is kept
-runtime-agnostic where it counts so a later Cloudflare / AWS / GCP effort is a
-preset + adapter swap. See [`docs/adr/0009-runtime-assumptions-and-deployment-portability.md`](docs/adr/0009-runtime-assumptions-and-deployment-portability.md)
-for the per-target change tables and the two commented swap points
-(`apps/web/app/db/client.ts`, `apps/web/vite.config.ts`).
+Hosted target is **Cloudflare Workers** (Terraform for account resources, Wrangler
+for code). Local `shopify app dev` stays on Node and does **not** need a
+Cloudflare account.
 
-CI/CD, automated tests, and infrastructure-as-code are out of scope for this
-template.
+Follow the ordered CLI runbook in [`docs/DEPLOY-PLAN.md`](docs/DEPLOY-PLAN.md).
+Decisions: ADRs [0011](docs/adr/0011-workers-build-and-runtime-adapter.md)–[0017](docs/adr/0017-local-dev-and-runtime-seam.md).
+
+CI/CD is out of scope until a manual `terraform apply` + `wrangler deploy` from
+this machine has worked.
 
 ## License
 

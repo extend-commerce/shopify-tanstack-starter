@@ -5,6 +5,12 @@ packages:
 # The pnpm catalog is the single version authority for every dependency shared by
 # the app (apps/web) and the framework-glue package
 # (packages/shopify-app-tanstack-start). Bump versions here, once. See ADR 0008.
+allowBuilds:
+  '@parcel/watcher': true
+  better-sqlite3: true
+  esbuild: true
+  workerd: true
+
 catalog:
   # React 19 (ADR 0008)
   react: 19.2.8
@@ -29,8 +35,8 @@ catalog:
   # line ERESOLVEs against the session-storage-drizzle adapter peer.
   drizzle-orm: ^0.45.0
   drizzle-kit: 0.30.6
-  pg: 8.23.0
-  '@types/pg': 8.15.6
+  better-sqlite3: 12.4.1
+  '@types/better-sqlite3': 7.6.13
 
   # Build / tooling shared across workspaces (ADR 0008 / ADR 0009)
   typescript: 5.9.3

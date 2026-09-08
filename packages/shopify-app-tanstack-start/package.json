@@ -4,14 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Framework glue that gives a TanStack Start app the Shopify capabilities @shopify/shopify-app-react-router gives a React Router app. Consumed as TypeScript source (JIT, ssr.noExternal). Not published. See docs/adr/0001.",
-  "//adapters": "Ships ./adapters/node only. ./adapters/web-api (generic Web/Fetch) and ./adapters/cf-worker (Cloudflare Workers) are DOCUMENTED-BUT-UNSHIPPED (ADR 0009): each is a ~10-line side-effect module (import @shopify/shopify-api/adapters/<runtime> + setAbstractRuntimeString) plus an exports entry, added by the deferred deployment effort.",
+  "//adapters": "Runtime adapters live in the app (`apps/web/app/platform*.ts`), which imports `@shopify/shopify-api/adapters/<runtime>` directly. The package stays runtime-agnostic (amends ADR 0009).",
   "exports": {
     ".": "./src/server/index.ts",
     "./react": "./src/react/index.ts",
     "./middleware": "./src/middleware/index.ts",
     "./webhooks": "./src/webhooks/index.ts",
     "./clients": "./src/clients/index.ts",
-    "./adapters/node": "./src/adapters/node.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

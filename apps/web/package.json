@@ -7,6 +7,11 @@
     "dev": "vite dev",
     "build": "vite build",
     "start": "node --env-file-if-exists=../../.env .output/server/index.mjs",
+    "build:cf": "CLOUDFLARE=1 vite build",
+    "preview:cf": "CLOUDFLARE=1 vite preview",
+    "deploy:production": "CLOUDFLARE=1 WRANGLER_CONFIG=wrangler.production.jsonc vite build && wrangler deploy",
+    "deploy:staging": "CLOUDFLARE=1 vite build && wrangler deploy",
+    "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint app",
     "format:check": "prettier --check app",
@@ -16,27 +21,31 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx --env-file-if-exists=../../.env app/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "db:up": "docker compose -f ../../docker-compose.yml up -d --wait && pnpm db:migrate && pnpm db:seed"
+    "db:up": "mkdir -p ../../.data && pnpm db:migrate && pnpm db:seed"
   },
   "dependencies": {
     "@shopify/admin-api-client": "catalog:",
+    "@shopify/shopify-api": "catalog:",
+    "@shopify/shopify-app-session-storage": "catalog:",
     "@shopify/shopify-app-session-storage-drizzle": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "better-sqlite3": "catalog:",
     "drizzle-orm": "catalog:",
-    "pg": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "shopify-app-tanstack-start": "workspace:*"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.54.4",
+    "@cloudflare/workers-types": "5.20260904.1",
     "@graphql-codegen/cli": "6.3.1",
     "@shopify/api-codegen-preset": "catalog:",
     "@tanstack/router-cli": "1.167.33",
     "@tanstack/router-plugin": "catalog:",
+    "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
-    "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "6.1.1",
@@ -47,6 +56,7 @@
     "nitro": "3.0.260610-beta",
     "tsx": "4.20.3",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "wrangler": "4.129.0"
   }
 }

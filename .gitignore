@@ -8,9 +8,17 @@ node_modules/
 .env
 .env.*
 !.env.example
+.dev.vars
 
 # generated route tree (regenerated on every dev/build and in predev) — ADR 0008
 **/routeTree.gen.ts
+
+# Local SQLite (ADR 0012 / 0017)
+.data/
+
+# Wrangler / Miniflare
+**/.wrangler/
+**/.mf/
 
 # GraphQL codegen intermediate schema dump (ADR 0007). The committed
 # app/types/admin.{types,generated}.d.ts are what a fresh `pnpm i` needs; this
@@ -28,3 +36,14 @@ apps/web/app/types/*.schema.json
 
 .DS_Store
 *.log
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+infra/**/*.tfvars
+!infra/**/*.tfvars.example
+!infra/**/*.backend.hcl.example
+

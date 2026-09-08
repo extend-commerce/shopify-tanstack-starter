@@ -1,35 +1,34 @@
 // Verbatim copy of @shopify/shopify-app-session-storage-drizzle's canonical
-// postgres schema (v5.0.1 — src/schemas/postgres.schema.ts). Re-diff on adapter
+// sqlite schema (v5.0.1 — src/schemas/sqlite.schema.ts). Re-diff on adapter
 // bumps. The adapter does not export this or its table type
-// (`PostgresSessionTable`) — see ADR 0005.
+// (`SQLiteSessionTable`) — see ADR 0012.
 //
 // 17 columns, canonical camelCase SQL identifiers, SQL table name `session`.
-// No columns added or removed: the associated-user columns (`userId`,
-// `firstName`, `lastName`, `email`, `accountOwner`, `locale`, `collaborator`,
-// `emailVerified`) and the expiring-offline-token columns (`refreshToken`,
-// `refreshTokenExpires`) stay even though offline-only auth (ADR 0002) leaves
-// them null.
+// `expires` / `refreshTokenExpires` are ISO text; `userId` is blob/bigint;
+// booleans are integer. No columns added or removed: associated-user +
+// expiring-offline-token columns stay even though offline-only auth (ADR 0002)
+// leaves them null.
 
-import { bigint, boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-export const sessionTable = pgTable('session' as string, {
+export const sessionTable = sqliteTable('session' as string, {
   id: text('id').primaryKey(),
   shop: text('shop').notNull(),
   state: text('state').notNull(),
-  isOnline: boolean('isOnline').default(false).notNull(),
+  isOnline: integer('isOnline', { mode: 'boolean' }).notNull().default(false),
   scope: text('scope'),
-  expires: timestamp('expires', { mode: 'date' }),
+  expires: text('expires'),
   accessToken: text('accessToken').notNull(),
-  userId: bigint('userId', { mode: 'number' }),
+  userId: blob('userId', { mode: 'bigint' }),
   firstName: text('firstName'),
   lastName: text('lastName'),
   email: text('email'),
-  accountOwner: boolean('accountOwner'),
+  accountOwner: integer('accountOwner', { mode: 'boolean' }),
   locale: text('locale'),
-  collaborator: boolean('collaborator'),
-  emailVerified: boolean('emailVerified'),
+  collaborator: integer('collaborator', { mode: 'boolean' }),
+  emailVerified: integer('emailVerified', { mode: 'boolean' }),
   refreshToken: text('refreshToken'),
-  refreshTokenExpires: timestamp('refreshTokenExpires', { mode: 'date' }),
+  refreshTokenExpires: text('refreshTokenExpires'),
 });
 
-export type PostgresSessionTable = typeof sessionTable;
+export type SQLiteSessionTable = typeof sessionTable;

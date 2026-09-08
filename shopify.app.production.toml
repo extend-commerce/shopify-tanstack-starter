@@ -1,0 +1,40 @@
+# Production Shopify app config (ADR 0016). Create a separate app in the Partner
+# Dashboard and paste its client_id. Deploy with:
+#   shopify app deploy --config shopify.app.production.toml
+#
+# application_url is the production custom domain (Terraform
+# `production_hostname`). Keep webhook paths identical to shopify.app.toml.
+
+client_id = "REPLACE_ME_PRODUCTION_CLIENT_ID"
+application_url = "https://app.example.com"
+embedded = true
+name = "tanstack-starter-production"
+
+[access_scopes]
+scopes = "write_products"
+
+[auth]
+redirect_urls = ["https://app.example.com/auth"]
+
+[webhooks]
+api_version = "2026-07"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app.uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app.scopes_update"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "/webhooks/compliance/customers-data-request"
+customer_deletion_url = "/webhooks/compliance/customers-redact"
+shop_deletion_url = "/webhooks/compliance/shop-redact"
+
+[build]
+automatically_update_urls_on_dev = false
+include_config_on_deploy = true
+
+[access.admin]
+direct_api_mode = "online"

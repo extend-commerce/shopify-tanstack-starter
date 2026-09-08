@@ -77,10 +77,12 @@ export function createRequestMiddleware(internals: ShopifyAppInternals) {
           },
         },
       });
-    } catch {
+    } catch (error) {
       // Invalid / expired token, or a transient exchange failure. Do NOT throw —
       // the bounce is a `beforeLoad` concern (ADR 0002). An expired token that
       // slips past here is caught on the next `adminMiddleware` server-fn call.
+      // Log so `wrangler tail` can distinguish "no token" from D1 / secret misses.
+      console.error('shopify requestMiddleware: session token rejected', error);
       return next({ context: { shopify: { ...EMPTY } } });
     }
   });

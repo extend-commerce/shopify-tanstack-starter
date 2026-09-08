@@ -1,0 +1,4 @@
+account_id            = "your-cloudflare-account-id"
+name_prefix           = "shopify-tanstack-starter"
+zone_id               = "your-cloudflare-zone-id"
+production_hostname   = "app.example.com"

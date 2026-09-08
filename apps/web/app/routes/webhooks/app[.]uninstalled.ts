@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { shopify } from '~/shopify.server';
-import { sessionStorage } from '~/db/client';
+import { sessionStorage } from '~/platform';
 
 /**
  * `POST /webhooks/app.uninstalled` (ADR 0004 starter routes).

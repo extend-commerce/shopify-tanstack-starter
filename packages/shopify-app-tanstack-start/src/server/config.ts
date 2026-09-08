@@ -1,6 +1,10 @@
 import { shopifyApi, type ConfigParams, type Session, type Shopify } from '@shopify/shopify-api';
 import type { SessionStorage } from '@shopify/shopify-app-session-storage';
 import type { AdminApiContext } from '../clients/admin';
+import {
+  createMemoryAuthCoordinationStore,
+  type AuthCoordinationStore,
+} from './auth/coordination';
 
 /**
  * Distribution model (ADR 0001 Consequences). `AppStore` (default) +
@@ -39,6 +43,12 @@ export interface AppConfigArg {
   scopes?: string[];
   /** The `@shopify/shopify-app-session-storage` persistence seam (IP-2). */
   sessionStorage: SessionStorage;
+  /**
+   * Cross-instance token-exchange / `afterAuth` coordination (ADR 0013).
+   * Defaults to in-memory Maps (single-instance). Workers pass a KV-backed
+   * store from `apps/web`; a future Redis impl is the same swap.
+   */
+  authCoordination?: AuthCoordinationStore;
   /** `AppStore` (default) or `SingleMerchant`. `ShopifyAdmin` throws (ADR 0001). */
   distribution?: AppDistribution;
   /** Auth route prefix. Defaults to `/auth`. */
@@ -86,6 +96,7 @@ export interface DerivedConfig extends AppConfigArg {
   auth: DerivedAuthPaths;
   future: NonNullable<AppConfigArg['future']>;
   excludePaths: string[];
+  authCoordination: AuthCoordinationStore;
 }
 
 /** Internal handle threaded through middleware / handlers / clients. */
@@ -112,6 +123,7 @@ export function deriveConfig(config: AppConfigArg): DerivedConfig {
     distribution: config.distribution ?? AppDistribution.AppStore,
     future: config.future ?? {},
     excludePaths: config.excludePaths ?? [],
+    authCoordination: config.authCoordination ?? createMemoryAuthCoordinationStore(),
     auth: {
       path: prefix,
       callbackPath: `${prefix}/callback`,

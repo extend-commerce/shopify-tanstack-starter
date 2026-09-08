@@ -1,0 +1,10 @@
+# Wrangler / CLOUDFLARE=1 local preview only (ADR 0016). `shopify app dev` does
+# NOT read this file — it uses the repo-root `.env` + CLI injection.
+#
+# Copy to apps/web/.dev.vars (gitignored via .env.*). SHOPIFY_API_SECRET is a
+# secret in deployed envs (`wrangler secret put`); locally it can live here.
+
+SHOPIFY_API_KEY=
+SHOPIFY_API_SECRET=
+SCOPES=write_products
+HOST=http://localhost:3000

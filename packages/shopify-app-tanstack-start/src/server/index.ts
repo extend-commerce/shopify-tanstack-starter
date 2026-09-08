@@ -21,6 +21,12 @@ export {
   type AfterAuthContext,
 } from './config';
 
+export {
+  createMemoryAuthCoordinationStore,
+  AFTER_AUTH_TTL_MS,
+  type AuthCoordinationStore,
+} from './auth/coordination';
+
 export { WITHIN_MILLISECONDS_OF_EXPIRY } from './auth/token-exchange';
 
 export {

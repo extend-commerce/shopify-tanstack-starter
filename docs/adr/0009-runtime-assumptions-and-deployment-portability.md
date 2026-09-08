@@ -16,31 +16,32 @@ other runtimes open, and exactly what a future deployment effort has to change.
   describes the swaps; producing the configs is the deployment effort's job.
   Half-wired configs that no pipeline exercises rot.
 
-## The runtime-adapter family
+## The runtime adapter (app-owned)
 
-`packages/shopify-app-tanstack-start` mirrors `@shopify/shopify-api`'s adapter
-convention (and `@shopify/shopify-app-react-router`'s): a set of side-effect
-subpath modules the consumer imports once, each binding the package to one
-runtime.
+**Amended:** the package no longer ships `/adapters/*` subpaths. Runtime
+polyfills come from `@shopify/shopify-api/adapters/<runtime>`, imported once in
+the app's platform seam (`apps/web/app/platform.ts` / `platform.cf.ts`, ADR 0017).
 
-- **Ships now:** `shopify-app-tanstack-start/adapters/node`. This **renames
-  ENG-2325's `/node` entry to `/adapters/node`** — a minor revision to that
-  ticket's `exports` map, for exact parity with `@shopify/shopify-api/adapters/node`.
-- **Adapter contract** — an `/adapters/<runtime>` module:
-  1. imports the matching `@shopify/shopify-api/adapters/<runtime>` (which
-     registers that runtime's `crypto` / `fetch` / `base64` implementations into
-     `@shopify/shopify-api`'s global runtime table);
-  2. calls `setAbstractRuntimeString(() => '<Runtime string>')`;
-  3. exports nothing. It is imported for effect, at the top of the consumer's
-     `src/start.ts`.
-- **Named future siblings (documented, not shipped):**
-  `shopify-app-tanstack-start/adapters/web-api` (generic Web / Fetch runtimes)
-  and `shopify-app-tanstack-start/adapters/cf-worker` (Cloudflare Workers).
-  Adding one is a ~10-line file following the contract above plus an `exports`
-  entry — the deployment effort adds the one it needs.
-- The package's own code already imports `@shopify/shopify-api/adapters/web-api`
-  for **Web Crypto** (ENG-2325); the `/adapters/node` module is additive, not a
-  replacement of that baseline.
+That matches how Shopify expects consumers to bind `@shopify/shopify-api`: pick
+the adapter for the host you deploy to. The TanStack package stays
+runtime-agnostic — auth, webhooks, and middleware do not care which polyfill
+registered crypto/fetch.
+
+- **Local / Node:** `import '@shopify/shopify-api/adapters/node'` in `platform.ts`,
+  plus optional `setAbstractRuntimeString(() => 'TanStack Start (Node)')` for
+  User-Agent / error context.
+- **Workers:** `import { cfWorkerAdapterInitialized } from
+  '@shopify/shopify-api/adapters/cf-worker'` in `platform.cf.ts` (named export so
+  the side-effect is not tree-shaken), then `setAbstractRuntimeString`.
+- **Another host (Lambda, Cloud Run, …):** add/swap a platform module and import
+  the matching `@shopify/shopify-api/adapters/*` — no package release required.
+- Package tests may still import `@shopify/shopify-api/adapters/web-api` for the
+  Vitest environment; that is test-only, not a public export.
+
+Earlier drafts mirrored RR's thin `/adapters/node` wrapper. RR's wrappers mostly
+set a runtime string; the real polyfill is still `@shopify/shopify-api`. Keeping
+parallel wrappers in this package implied we would grow a catalog of platforms —
+that belongs in the app, not the glue library.
 
 ## Portability constraints baked in now
 
@@ -93,7 +94,7 @@ call sites.
 
 | Target | Build | Code changes |
 |---|---|---|
-| **Cloudflare Workers** | Swap `nitro()` for `@cloudflare/vite-plugin`; `wrangler.jsonc` with `main: "@tanstack/react-start/server-entry"` and `compatibility_flags: ["nodejs_compat"]` | Add `adapters/cf-worker`; swap `app/db/client.ts` to a serverless/HTTP Postgres driver (`@neondatabase/serverless`, `postgres` over `connect()`, or Hyperdrive) behind the unchanged `SessionStorage` interface; replace the ENG-2326 in-memory de-dupe with a Durable Object / KV lock; confirm all env reads are request-scoped |
+| **Cloudflare Workers** | Swap `nitro()` for `@cloudflare/vite-plugin`; `wrangler.jsonc` with `main: "@tanstack/react-start/server-entry"` and `compatibility_flags: ["nodejs_compat"]` | Import `@shopify/shopify-api/adapters/cf-worker` from the app platform module; swap `app/db/client.ts` to a serverless/HTTP Postgres driver (`@neondatabase/serverless`, `postgres` over `connect()`, or Hyperdrive) behind the unchanged `SessionStorage` interface; replace the ENG-2326 in-memory de-dupe with a Durable Object / KV lock; confirm all env reads are request-scoped |
 | **AWS Lambda** | `nitro({ preset: 'aws_lambda' })`, optionally `awsLambda: { streaming: true }` if HTML streaming matters | Replace the in-memory de-dupe with a shared lock (cold starts + concurrency make the double-fire window routine here); `pg` works but prefer RDS Proxy / a pooled connection; env from Lambda config |
 | **AWS ECS / Fargate (container)** | `nitro({ preset: 'node-server' })` (unchanged), containerize `.output/` on a Node 22 base image | None beyond the shared-lock swap if running >1 task |
 | **GCP Cloud Run** | `nitro({ preset: 'node-server' })` (unchanged), containerize `.output/` | None beyond the shared-lock swap if `min-instances`/concurrency allows >1 instance. No Nitro GCP preset exists — Cloud Run just runs the Node listener |
@@ -117,11 +118,11 @@ deployment effort writes it.
 
 - **Explicit `node-server` preset.** Relying on Nitro's default means the target
   changes silently if Nitro's default does. The starter states its runtime.
-- **Adapter family over a single `/node` entry.** The consumer already has to
-  import *something* to bind the runtime (`@shopify/shopify-api` requires an
-  adapter import). Matching that library's `/adapters/<runtime>` naming makes the
-  future swap a one-line import change a reader can guess, and keeps parity with
-  the RR package the starter mirrors.
+- **App-owned `@shopify/shopify-api` adapter import.** The consumer already has to
+  bind a runtime polyfill. Doing that in `platform.ts` / `platform.cf.ts` (not a
+  package `/adapters/*` catalog) keeps the glue library host-agnostic and lets
+  engineers targeting Lambda / Cloud Run / etc. own the one-line import without
+  waiting on a package release.
 - **Lint-enforce the package, not the app.** The package is the reusable, must-
   stay-portable unit; a CI-visible rule stops `node:crypto` creeping in during a
   refactor. `apps/web` is the fork-and-edit surface — over-linting it fights the
@@ -139,9 +140,10 @@ deployment effort writes it.
 
 ## Considered and rejected
 
-- **Ship `adapters/web-api` + `adapters/cf-worker` now.** Rejected: untested edge
-  adapters that no build path exercises. The contract is documented; adding one
-  is trivial when a deployment effort needs it.
+- **Package `/adapters/node` + `/adapters/cf-worker` wrappers.** Rejected
+  (amended): they only re-export `@shopify/shopify-api/adapters/*` plus a runtime
+  string. Shipping them implied a growing platform catalog in the glue package;
+  the app platform seam (ADR 0017) is the right place.
 - **Pluggable `Lock` / `IdempotencyStore` interface in the package now.**
   Rejected — see Why. Revisit in the deployment effort.
 - **Lint-enforce portability across `apps/web` too.** Rejected: the two real Node
@@ -155,15 +157,14 @@ deployment effort writes it.
 
 ## Consequences
 
-- **ENG-2325** is revised: its `/node` export becomes `/adapters/node`, and the
-  `exports` map gains documented (unshipped) `/adapters/web-api` and
-  `/adapters/cf-worker` slots.
+- **ENG-2325** / package `exports`: no `/adapters/*` subpaths. Consumers import
+  `@shopify/shopify-api/adapters/<runtime>` from the app platform module.
 - **ENG-2332**'s oxlint config gains a `no-restricted-imports` rule for `node:*`
   and bare Node built-ins scoped to `packages/*/src/**`.
 - **ENG-2334** — the build plan's "Deploying" section is this ADR plus the README
   stub; the plan itself stays Node-only.
-- `apps/web` carries exactly two files commented as deployment swap points
-  (`app/db/client.ts`, `vite.config.ts`); a reviewer can find the whole
-  portability surface from those two comments plus this ADR.
+- `apps/web` carries the deployment swap points (`app/platform*.ts`,
+  `app/db/client*.ts`, `vite.config.ts`); a reviewer can find the whole
+  portability surface from those comments plus this ADR.
 - The starter runs on one instance. Multi-instance hosting needs the shared-lock
   swap before `afterAuth` side effects are safe.

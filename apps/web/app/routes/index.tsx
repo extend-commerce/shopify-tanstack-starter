@@ -27,11 +27,23 @@ export const Route = createFileRoute('/')({
 });
 
 function RootIndex() {
+  // Plain HTML on purpose. `polaris.js` upgrades `<s-page>` and relocates its
+  // children into App Bridge admin chrome (ADR 0006). On this unauthenticated
+  // public URL there is no admin frame, so Polaris hosts end up
+  // `display: contents` with height 0 — a blank page whose source still has the
+  // banner. `/` is on the IP-7 exclusion list and never renders inside Admin.
   return (
-    <s-page heading="Shopify TanStack Starter">
-      <s-section>
-        <s-banner tone="warning">This app must be opened from your Shopify admin.</s-banner>
-      </s-section>
-    </s-page>
+    <main
+      style={{
+        fontFamily:
+          'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        margin: '2rem auto',
+        maxWidth: '36rem',
+        lineHeight: 1.5,
+      }}
+    >
+      <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Shopify TanStack Starter</h1>
+      <p>This app must be opened from your Shopify admin.</p>
+    </main>
   );
 }

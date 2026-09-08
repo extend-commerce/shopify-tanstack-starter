@@ -11,10 +11,10 @@
  *
  * `start.ts` is a client entry too (TanStack Start bundles it for both
  * environments), so it must NOT statically import `~/shopify.server` — that
- * module pulls in `pg` / the Node adapter and is blocked by import-protection in
- * the client graph. Instead the delegating `.server()` callback below
- * dynamically imports it; the compiler strips `.server()` bodies (and that
- * dynamic import with them) from the client bundle.
+ * module pulls in SQLite / the runtime adapter via `~/platform` and is blocked by
+ * import-protection in the client graph. Instead the delegating `.server()`
+ * callback below dynamically imports it; the compiler strips `.server()` bodies
+ * (and that dynamic import with them) from the client bundle.
  */
 import { createStart, createCsrfMiddleware } from '@tanstack/react-start';
 
